@@ -2,4 +2,4 @@ langchain
 langchain-gradient
 langchain-community
 python-dotenv
-
+fastapi[standard]
