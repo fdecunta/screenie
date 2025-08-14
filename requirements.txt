@@ -1,3 +1,5 @@
 litellm
 python-dotenv
 fastapi[standard]
+click
+rich
