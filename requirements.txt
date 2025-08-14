@@ -2,4 +2,4 @@ litellm
 python-dotenv
 fastapi[standard]
 click
-pybtex
+bibtexparser
