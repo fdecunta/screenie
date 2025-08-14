@@ -1,5 +1,3 @@
-langchain
-langchain-gradient
-langchain-community
+litellm
 python-dotenv
 fastapi[standard]
