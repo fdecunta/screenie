@@ -19,7 +19,7 @@ def cli():
 @cli.command(name="init")
 @click.argument("name")
 def init(name):
-    """Init a screener in current directory"""
+    """Init a screener database in current directory"""
     db_name = name + ".db"
 
     if os.path.exists(db_name):

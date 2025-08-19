@@ -24,16 +24,30 @@ CREATE TABLE IF NOT EXISTS criteria (
     text TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS screener (
+CREATE TABLE IF NOT EXISTS llm_calls (
+    call_id INTEGER PRIMARY KEY,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    model TEXT NOT NULL,
+    prompt TEXT NOT NULL,
+    input_tokens INTEGER NOT NULL,
+    output_tokens INTEGER NOT NULL,
+    criteria_id INTEGER NOT NULL,
+    paper_id INTEGER NOT NULL,
+    full_response TEXT NOT NULL,
+    FOREIGN KEY (criteria_id) REFERENCES criteria (criteria_id),
+    FOREIGN KEY (paper_id) REFERENCES papers (paper_id)
+);
+
+CREATE TABLE IF NOT EXISTS screening_results (
     suggestion_id INTEGER PRIMARY KEY,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     criteria_id INTEGER NOT NULL,
     paper_id INTEGER NOT NULL,
-    verdict INTEGER NOT NULL CHECK (verdict IN (-1, 0, 1)),  
+    verdict INTEGER NOT NULL CHECK (verdict IN (0, 1)),  -- 0: Reject, 1: Accept
     reason TEXT NOT NULL,
-    human_validated INTEGER NOT NULL DEFAULT 0 CHECK (human_validated IN (0, 1)),
-    input_tokens INTEGER NOT NULL DEFAULT 0,
-    output_tokens INTEGER NOT NULL DEFAULT 0,
+    human_validated INTEGER NOT NULL DEFAULT 0 CHECK (human_validated IN (0, 1)), -- 0:Not validated, 1:Validated
+    call_id INTEGER NOT NULL,
     FOREIGN KEY (paper_id) REFERENCES papers (paper_id),
-    FOREIGN KEY (criteria_id) REFERENCES criteria (criteria_id)
+    FOREIGN KEY (criteria_id) REFERENCES criteria (criteria_id),
+    FOREIGN KEY (call_id) REFERENCES llm_calls (call_id)
 );
