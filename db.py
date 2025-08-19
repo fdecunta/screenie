@@ -58,3 +58,14 @@ def insert_file(db_path: str, file_path: str):
         file_id = cur.execute("SELECT file_id FROM input_files WHERE name = ?", (filename,)).fetchone()[0]
 
     return file_id
+
+
+def insert_papers(db_path, file_id, papers_list):
+    with sqlite3.connect(db_path) as con:
+        cur = con.cursor()
+        cur.executemany("""
+        INSERT INTO papers 
+        (title, authors, year, abstract, url, doi, file_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, [(p.title, p.author, p.year, p.abstract, p.url, p.doi, file_id) for p in papers_list]
+        )

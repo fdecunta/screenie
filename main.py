@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import click
+import os
 import sys
 
 import db
@@ -20,6 +21,11 @@ def cli():
 def init(name):
     """Init a screener in current directory"""
     db_name = name + ".db"
+
+    if os.path.exists(db_name):
+        click.secho(f"Error: database {db_name} already exists.", err=True, fg="red")
+        sys.exit(1)
+
     fmt_db_name = click.format_filename(db_name)
     if db.init_db(db_name):
         click.secho(f"Initialized {fmt_db_name}", fg="green")
@@ -27,7 +33,6 @@ def init(name):
         click.echo(f"Error: failed to initialize database '{fmt_db_name}'", err=True, fg="red")
         sys.exit(1)
 
-# ------
 
 def validate_db_file(ctx, param, value):
     if not value.lower().endswith(".db"):

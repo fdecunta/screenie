@@ -55,7 +55,6 @@ def validate_papers(papers: List[dict]) -> List[Paper]:
 
 
 def import_from_bib(db_path: str, file_path: str):
-
     # Read bib file
     click.echo(f"Reading bibliography from: {click.format_filename(file_path)}")
     try:
@@ -67,23 +66,17 @@ def import_from_bib(db_path: str, file_path: str):
 
     papers_list, errors = validate_papers(bib_database.entries)
 
-    click.secho(f"✓ Valid papers: {len(papers_list)}", fg="green")
-
-    if len(errors) > 0:
+    if papers_list:
+        click.secho(f"✓ Valid papers: {len(papers_list)}", fg="green")
+    if errors:
         click.secho(f"✗ Invalid papers: {len(errors)}", fg="red")
 
 
     # Insert files into database
-    #file_id = db.insert_file(db_path, file_path)
-    #print(file_id)
+    file_id = db.insert_file(db_path, file_path)
 
-    if len(papers_list) > 0:
-        click.secho(f"Importing {len(papers_list)} papers to database...")
-        # imported_count = db.insert_papers(db_path, papers_list)
-        click.secho("Import completed successfully!", fg="green", bold=True)
-    else:
-        click.secho("No valid papers to import.", fg="yellow")
-
-
-
+    # Insert papers into database
+    click.secho(f"Importing {len(papers_list)} papers to database...")
+    imported_count = db.insert_papers(db_path, file_id, papers_list)
+    click.secho(f"Done!")
 
