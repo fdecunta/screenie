@@ -3,3 +3,4 @@ python-dotenv
 fastapi[standard]
 click
 bibtexparser
+pydantic

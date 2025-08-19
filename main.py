@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 
 import click
+import sys
+
+import db
+from reader import (
+        import_from_bib
+)
 
 
 @click.group()
@@ -10,10 +16,16 @@ def cli():
 
 
 @cli.command()
-@click.argument("input", type=click.File("rb"), nargs=1)
-def init(input):
+@click.argument("name")
+def init(name):
     """Init a screener in current directory"""
-    click.echo(f"screenie initialized with {input.name}")
+    db_name = name + ".db"
+    if db.init_db(db_name):
+        click.echo(f"screenie initialized {db_name}")
+    else:
+        click.echo(f"Error: failed to initialize database '{db_name}'", err=True)
+        sys.exit(1)
+
 
 
 @cli.command()
