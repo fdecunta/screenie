@@ -1,6 +1,13 @@
+import click
 from dotenv import load_dotenv
+import json
 import litellm
 import os
+import re
+
+import db
+import screenie_printer
+
 
 load_dotenv()
 
@@ -17,31 +24,11 @@ instruction = "Recommend inclusion or not of a scientific paper and give a one-s
 context = "You will be given criteria for inclusion. The user will give you the paper's title and abstract.\n"
 
 data_format = """
-Create a JSON output using this schema:
+Create a valid JSON output. Follow this schema:
 {
-    "verdict": {1 or 0: 1 for inclusion, 0 if not},
-    "reason": {one-sentence explanation of your decision}
-
+    "verdict": "{1 inclusion, 0 not}",
+    "reason": "{one-sentence explanation of your decision}"
 }
-"""
-
-
-import sqlite3
-
-conn = sqlite3.connect("MA_llm.db")
-cur = conn.cursor()
-
-cur.execute("""SELECT title, abstract FROM papers LIMIT 1;""")
-title, abstract = cur.fetchone()
-conn.close()
-
-
-msg = f"""
-Title:
-{title}
-
-Abstract:
-{abstract}
 """
 
 
@@ -51,33 +38,21 @@ Abstract:
 criteria = """
 This is the criteria:
 
-1. The study has experimental data about Epichloë endophytes and herbivory.
-2. The study includes a factorial experiment with four treatments (endophytes x herbivory)
-\n
-"""
-
-
-criteria2 = """
-This is the criteria:
-
 1. The study has experimental data about how to use LLMs for ecology research.
 2. The study compares LLMs vs humans.
 \n
 """
 
-
-
-system_prompt = persona + instruction + context + data_format + criteria2
+system_prompt = persona + instruction + context + data_format + criteria
 
 
 # -----------------------
 
-def make_recommendation(system_prompt, msg):
+def call_llm(system_prompt, msg):
     messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": msg},
     ]
-    
     
     response = litellm.completion(
             model=LLM_MODEL,
@@ -85,24 +60,78 @@ def make_recommendation(system_prompt, msg):
             messages=messages,
             temperature=0,
     )
-
     return response
-#    return response.choices[0].message.content
+
+
+def extract_json_block(text: str) -> str | None:
+    """
+    Extract the content of the first ```json ... ``` block in a string.
+    
+    Args:
+        text: The text containing the JSON code block.
+    
+    Returns:
+        The JSON string inside the block, or None if not found.
+    """
+    pattern = r"```json\s*([\s\S]*?)```"
+
+    match = re.search(pattern, text)
+    if match:
+        json_str = match.group(1).strip()
+        try:
+            return json.loads(json_str)
+        except json.JSONDecodeError:
+            return None
+    return None
 
 
 
-paper_id = 1
-criteria_id = 1
+def get_suggestion(db_path: str, criteria_id: int, paper_id: int):
+    paper_id, title, authors, abstract = db.retrieve_paper(db_path=db_path, paper_id=paper_id)
 
-response = make_recommendation(system_prompt, msg)
+    screenie_printer.print_paper(title, authors, abstract)
 
-db_path = "MA_llm.db"
+    msg = f"""
+    Title:
+    {title}
+    
+    Abstract:
+    {abstract}
+    """
 
-import db
+    # Call LLM to get suggestion and save the call
+    response = call_llm(system_prompt, msg)
 
-try:
-    db.save_llm_call(db_path=db_path, prompt=system_prompt, response=response, criteria_id=1, paper_id=1)
-except Exception as e:
-    print(e)
+    call_id = db.save_llm_call(
+            db_path=db_path,
+            prompt=system_prompt,
+            response=response,
+            criteria_id=criteria_id,
+            paper_id=paper_id
+    )
 
-print(response.choices[0].message.content)
+    # TODO: Validate LLM response
+    #
+    #
+
+
+    # Parse LLM response
+    json_output = extract_json_block(response.choices[0].message.content)
+    verdict = json_output['verdict']
+    reason = json_output['reason']
+
+    # Save screening_result
+    suggestion_id = db.save_screening_result(
+            db_path=db_path,
+            criteria_id=criteria_id,
+            paper_id=paper_id,
+            call_id=call_id,
+            verdict=verdict,
+            reason=reason,
+            human_validated=0
+    )
+
+    screenie_printer.print_llm_suggestion(verdict, reason)
+
+
+

@@ -75,11 +75,36 @@ def insert_papers(db_path, file_id, papers_list):
         )
 
 
+def retrieve_paper(db_path, paper_id):
+    with sqlite3.connect(db_path) as con:
+        cur = con.cursor()
+        res = cur.execute("""
+        SELECT paper_id, title, authors, abstract
+        FROM papers
+        WHERE paper_id = ?
+        """, (paper_id,)
+        ).fetchone()
+
+    return res
+
 # --- criteria table
 
 # --- llm_calls table
 
 def save_llm_call(db_path, prompt, response, criteria_id, paper_id):
+    """
+    Save LLM API call details to the database.
+    
+    Args:
+        db_path (str): Database file path
+        prompt (str): Prompt sent to LLM
+        response: LLM API response object
+        criteria_id (int): Criteria ID
+        paper_id (int): Paper ID
+        
+    Returns:
+        int: ID of the inserted record
+    """
     response_data = response.json()
     
     model = response_data['model']
@@ -96,5 +121,20 @@ def save_llm_call(db_path, prompt, response, criteria_id, paper_id):
         """, (model, prompt, input_tokens, output_tokens, criteria_id, paper_id, full_response)
         )
 
+        return cur.lastrowid   
+
 
 # --- screening_results table
+
+def save_screening_result(db_path, criteria_id, paper_id, call_id, verdict, reason, human_validated):
+    with sqlite3.connect(db_path) as con:
+        cur = con.cursor()
+        cur.execute("""
+        INSERT INTO screening_results
+        (criteria_id, paper_id, call_id, verdict, reason, human_validated)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """, (criteria_id, paper_id, call_id, verdict, reason, human_validated)
+        )
+
+        return cur.lastrowid
+

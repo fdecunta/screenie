@@ -4,3 +4,4 @@ fastapi[standard]
 click
 bibtexparser
 pydantic
+rich

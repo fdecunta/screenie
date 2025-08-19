@@ -43,10 +43,10 @@ CREATE TABLE IF NOT EXISTS screening_results (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     criteria_id INTEGER NOT NULL,
     paper_id INTEGER NOT NULL,
+    call_id INTEGER NOT NULL,
     verdict INTEGER NOT NULL CHECK (verdict IN (0, 1)),  -- 0: Reject, 1: Accept
     reason TEXT NOT NULL,
     human_validated INTEGER NOT NULL DEFAULT 0 CHECK (human_validated IN (0, 1)), -- 0:Not validated, 1:Validated
-    call_id INTEGER NOT NULL,
     FOREIGN KEY (paper_id) REFERENCES papers (paper_id),
     FOREIGN KEY (criteria_id) REFERENCES criteria (criteria_id),
     FOREIGN KEY (call_id) REFERENCES llm_calls (call_id)
