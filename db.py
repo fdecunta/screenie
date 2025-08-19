@@ -55,3 +55,6 @@ def insert_file(db_path: str, file_path: str):
             click.secho(f"Database error: {e}", fg="red", err=True)
             sys.exit(1)
 
+        file_id = cur.execute("SELECT file_id FROM input_files WHERE name = ?", (filename,)).fetchone()[0]
+
+    return file_id
