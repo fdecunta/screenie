@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS input_files (
     file_id INTEGER PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
-    content BLOB NOT NULL,  
+    content BLOB NOT NULL UNIQUE,  
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

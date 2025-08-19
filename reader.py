@@ -1,11 +1,11 @@
 import bibtexparser
+import click
 import os
 from pydantic import BaseModel
 import sqlite3
+import sys
 from typing import Optional, List
 import unicodedata
-
-SCREENIE_DB = ""
 
 
 class Paper(BaseModel):
@@ -50,46 +50,42 @@ def validate_papers(papers: List[dict]) -> List[Paper]:
     return valid_papers
 
 
-def insert_file(path):
-    filename = os.path.basename(path)
+def insert_file(db_path, file_path):
+    filename = os.path.basename(file_path)
 
-    with open(path, "rb") as f:
+    fmt_filename = click.format_filename(filename)
+    fmt_database = click.format_filename(os.path.basename(db_path))
+
+    # read file as bytes
+    with open(file_path, "rb") as f:
         file_bytes = f.read()
 
-    con = sqlite3.connect(SCREENIE_DB)
-    cur = con.cursor()
-
-    cur.execute("""
-    INSERT input_files (name, content)
-    VALUES (?, ?)
-    """, (filename, file_bytes)
-    )
-
-    con.commit()
-    con.close()
-
-    print(f"Saved new file {filename}")
-
-
-
-def insert_paper(paper):
-    con = sqlite3.connect(SCREENIE_DB)
-    cur = con.cursor()
-
-    cur.execute("""
-    INSERT INTO papers 
-    """)
+    # use context manager for connection
+    with sqlite3.connect(db_path) as con:
+        cur = con.cursor()
+        try:
+            cur.execute("""
+                INSERT INTO input_files (name, content)
+                VALUES (?, ?)
+            """, (filename, file_bytes))
+            con.commit()
+            click.secho(f"Added {fmt_filename} to {fmt_database}", fg="green")
+        except sqlite3.IntegrityError as e:
+            msg = str(e)
+            if "UNIQUE constraint" in msg:
+                click.secho(f"File {fmt_filename} already exists in the database.", fg="red", err=True)
+            else:
+                click.secho(f"Failed to import {fmt_filename}: {msg}", fg="red", err=True)
+            sys.exit(1)
+        except sqlite3.DatabaseError as e:
+            click.secho(f"Database error: {e}", fg="red", err=True)
+            sys.exit(1)
 
 
+def import_from_bib(db_path: str, file_path: str):
+#    bib_database = read_bib(path)
+#    papers_list = validate_papers(bib_database.entries)
 
+    insert_file(db_path, file_path)
 
-def import_from_bib(path):
-    bib_database = read_bib(path)
-    papers_list = validate_papers(bib_database.entries)
-
-    insert_file(path)
-
-#    for paper in papers_list:
-#        print(paper.title)
-#        print()
 
