@@ -6,3 +6,4 @@ bibtexparser
 pydantic
 rich
 pandas
+rispy
