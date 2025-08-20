@@ -1,20 +1,13 @@
 import click
-from dotenv import load_dotenv
 import json
 import litellm
 import os
 import re
 
+import config
 import db
 import screenie_printer
 
-
-load_dotenv()
-
-LLM_MODEL="gradient_ai/llama3.3-70b-instruct"
-#LLM_MODEL="gradient_ai/deepseek-r1-distill-llama-70b"
-
-API_KEY=os.environ["DIGITALOCEAN_INFERENCE_KEY"]
 
 
 persona = "You are an assistant of an ecology researcher that is conducting the initial screening of papers for a meta-analysis.\n"
@@ -44,16 +37,19 @@ system_prompt = persona + instruction + context + data_format + criteria
 # -----------------------
 
 def call_llm(system_prompt, msg):
+    # Load config
+    usr_config = config.get_provider_config()
+ 
     messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": msg},
     ]
     
     response = litellm.completion(
-            model=LLM_MODEL,
-            api_key=API_KEY,
-            messages=messages,
-            temperature=0,
+            model = usr_config['model'],
+            api_key = usr_config['api_key'],
+            messages = messages,
+            temperature = 0,
     )
     return response
 
@@ -98,11 +94,11 @@ def get_suggestion(db_path: str, criteria_id: int, paper_id: int):
     response = call_llm(system_prompt, msg)
 
     call_id = db.save_llm_call(
-            db_path=db_path,
-            prompt=system_prompt,
-            response=response,
-            criteria_id=criteria_id,
-            paper_id=paper_id
+            db_path = db_path,
+            prompt = system_prompt,
+            response = response,
+            criteria_id = criteria_id,
+            paper_id = paper_id
     )
 
     # TODO: Validate LLM response
@@ -120,16 +116,13 @@ def get_suggestion(db_path: str, criteria_id: int, paper_id: int):
 
     # Save screening_result
     suggestion_id = db.save_screening_result(
-            db_path=db_path,
-            criteria_id=criteria_id,
-            paper_id=paper_id,
-            call_id=call_id,
-            verdict=verdict,
-            reason=reason,
-            human_validated=0
+            db_path = db_path,
+            criteria_id = criteria_id,
+            paper_id = paper_id,
+            call_id = call_id,
+            verdict = verdict,
+            reason = reason,
+            human_validated = 0
     )
 
     screenie_printer.print_llm_suggestion(verdict, reason)
-
-
-

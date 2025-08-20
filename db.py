@@ -1,9 +1,8 @@
 import click
+import json
 import os
 import sqlite3
 import sys
-import litellm
-import json
 
 def init_db(db_name: str, sql_file="schema.sql"):
     conn = sqlite3.connect(db_name)
