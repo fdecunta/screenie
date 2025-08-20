@@ -7,8 +7,8 @@ console = Console()
 
 def print_paper(title, authors, abstract):
     title_text = Text(title, style="bold underline")
-    authors_text = Text(authors, style="italic dim")
-    abstract_text = Text(abstract, style="white")
+    authors_text = Text(authors, style="italic")
+    abstract_text = Text(abstract)
     content = Padding(Text.assemble(authors_text, "\n\n", abstract_text), (1, 4))
     panel = Panel(content, title=title_text, expand=False)
     console.print(panel)

@@ -105,8 +105,8 @@ def edit_inclusion_criteria(database: str) -> None:
         click.echo("No criteria provided.")
         return
 
-    err = db.save_criteria(db_path=database, text=criteria)
-    if err is None:
+    saved_criteria = db.save_criteria(db_path=database, text=criteria)
+    if saved_criteria is None:
         click.echo("The same criteria already exists. No changes made.")
         return
 
@@ -134,6 +134,17 @@ def config_edit():
         click.edit(filename=str(config_file))
     except Exception as e:
         click.secho(f"Failed to open editor: {e}", fg="red")
+
+
+@cli.command(name="screen")
+@click.argument(
+    "database",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    callback=validate_db_file,
+)
+def screen_papers(database):
+    import llm
+    llm.get_suggestion(database, 1, 1)
 
 
 # Entry point

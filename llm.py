@@ -3,11 +3,11 @@ import json
 import litellm
 import os
 import re
+import sys
 
 import config
 import db
 import screenie_printer
-
 
 
 persona = "You are an assistant of an ecology researcher that is conducting the initial screening of papers for a meta-analysis.\n"
@@ -23,15 +23,18 @@ Create a valid JSON output. Follow this schema:
 
 # -----------------------
 
-criteria = """
-This is the criteria:
+def compile_prompt(db_path: str, persona: str, instruction: str, context: str, data_format: str) -> str:
+    # TODO: Just read the selected 'prompt' from the database.
 
-1. The study has experimental data about how to use LLMs for ecology research.
-2. The study compares LLMs vs humans.
-\n
-"""
+    user_criteria = db.read_last_criteria(db_path=db_path)
+    if len(user_criteria) == 0:
+        click.secho("Error: there is no criteria defined", err=True, fg="red")
+        sys.exit(1)
 
-system_prompt = persona + instruction + context + data_format + criteria
+    criteria = "\nThis is the criteria:\n" + user_criteria + "\n"
+
+    system_prompt = persona + instruction + context + data_format + criteria
+    return system_prompt
 
 
 # -----------------------
@@ -79,8 +82,7 @@ def extract_json_block(text: str) -> str | None:
 def get_suggestion(db_path: str, criteria_id: int, paper_id: int):
     paper_id, title, authors, abstract = db.retrieve_paper(db_path=db_path, paper_id=paper_id)
 
-    screenie_printer.print_paper(title, authors, abstract)
-
+    system_prompt = compile_prompt(db_path, persona, instruction, context, data_format)
     msg = f"""
     Title:
     {title}
@@ -88,6 +90,8 @@ def get_suggestion(db_path: str, criteria_id: int, paper_id: int):
     Abstract:
     {abstract}
     """
+
+    screenie_printer.print_paper(title, authors, abstract)
 
     # Call LLM to get suggestion and save the call
     response = call_llm(system_prompt, msg)

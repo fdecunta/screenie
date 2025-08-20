@@ -1,2 +1,25 @@
+- TESTS!!!!
+
+- Commands:
+    - init: init database
+    - summary [DATABASE]: 
+    - screen [DATABASE]
+
+```bash
+screenie papers import --from="Foo.bib" --to="my.db"
+```
+
+```bash
+screenie screen "my.db" --batch=10
+```
+
+- Subgroups of commands, like in git: 
+    - prompt: edit, show, delete, select
+    - criteria: edit, show, delete, select
+    - papers: import, show, delete
+    - config: edit, validate
+    - summary: ???
+- Functions to handle prompts in the database. 
+- Prompt: ask the llm to give reasons with bulletpoints that include text references.
 - Timestamps are not in local time. 
 - Functions to inspect database

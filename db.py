@@ -100,7 +100,7 @@ def save_criteria(db_path, text):
         except sqlite3.Error as e:
             print("Insert criteria failed:", e)
             sys.exit(1)
-
+    return text
 
 def read_last_criteria(db_path: str) -> str:
     with sqlite3.connect(db_path) as con:
