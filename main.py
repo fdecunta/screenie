@@ -52,22 +52,53 @@ def init(name):
         sys.exit(1)
 
 
-@cli.command(name="import")
-@click.argument(
-    "database",
-    type=click.Path(exists=True, file_okay=True, dir_okay=False),
-    callback=validate_db_file
-)
-@click.argument(
-    "input",
-    type=click.File("rb")
-)
-def import_file(database, input):
-    """Import studies from bibliography file to database."""
-    reader.import_from_bib(db_path=database, file_path=input.name)
+@cli.command(name="config")
+def config_edit():
+    """Open config file in default text editor."""
+    config_dir = config.get_config_dir()
+    config_file = config_dir / "config.yaml"
+    
+    try:
+        click.edit(filename=str(config_file))
+    except Exception as e:
+        click.secho(f"Failed to open editor: {e}", fg="red")
+
+# Studies command group
+@cli.group(name="studies")
+def studies():
+    """Manage studies."""
+    pass
 
 
-@cli.command(name="criteria-edit")
+@studies.command(name="import")
+@click.option(
+   "--from",
+   "input_file",
+   type=click.Path(exists=True, file_okay=True, dir_okay=False),
+   required=True,
+   help="Bibliography file to import from"
+)
+@click.option(
+   "--to",
+   "database",
+   type=click.Path(file_okay=True, dir_okay=False),
+   callback=validate_db_file,
+   required=True,
+   help="Database file to import to"
+)
+def import_file(input_file, database):
+   """Import studies from bibliography file to database."""
+   reader.import_from_bib(db_path=database, file_path=input_file)
+
+
+# Criteria command group
+@cli.group(name="criteria")
+def criteria():
+    """Manage inclusion criteria for screening."""
+    pass
+
+
+@criteria.command(name="edit")
 @click.argument(
     "database",
     type=click.Path(exists=True, file_okay=True, dir_okay=False),
@@ -113,27 +144,20 @@ def edit_inclusion_criteria(database: str) -> None:
     click.secho("Criteria saved successfully.", fg="green")
 
 
-@cli.command(name="criteria-show")
+@criteria.command(name="show")
 @click.argument(
     "database",
     type=click.Path(exists=True, file_okay=True, dir_okay=False),
     callback=validate_db_file
 )
 def show_criteria(database):
+    """Show current inclusion criteria."""
     last_text = db.read_last_criteria(db_path=database)
-    click.echo(last_text)
+    if last_text:
+        click.echo(last_text)
+    else:
+        click.echo("No criteria defined yet.")
 
-
-@cli.command(name="config-edit")
-def config_edit():
-    """Open config file in default text editor."""
-    config_dir = config.get_config_dir()
-    config_file = config_dir / "config.yaml"
-    
-    try:
-        click.edit(filename=str(config_file))
-    except Exception as e:
-        click.secho(f"Failed to open editor: {e}", fg="red")
 
 
 @cli.command(name="screen")
@@ -143,6 +167,7 @@ def config_edit():
     callback=validate_db_file,
 )
 def screen_studies(database):
+    """Screen studies using LLM assistance."""
     import llm
     llm.get_suggestion(database, 1, 1)
 
