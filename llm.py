@@ -18,11 +18,8 @@ API_KEY=os.environ["DIGITALOCEAN_INFERENCE_KEY"]
 
 
 persona = "You are an assistant of an ecology researcher that is conducting the initial screening of papers for a meta-analysis.\n"
-
 instruction = "Recommend inclusion or not of a scientific paper and give a one-sentence explanation of your decision.\n"
-
 context = "You will be given criteria for inclusion. The user will give you the paper's title and abstract.\n"
-
 data_format = """
 Create a valid JSON output. Follow this schema:
 {
@@ -31,9 +28,7 @@ Create a valid JSON output. Follow this schema:
 }
 """
 
-
 # -----------------------
-
 
 criteria = """
 This is the criteria:
@@ -112,6 +107,9 @@ def get_suggestion(db_path: str, criteria_id: int, paper_id: int):
 
     # TODO: Validate LLM response
     #
+    # If the LLM fails, for example with bad output or timeout, there must be a 
+    # way to try again.
+    # Maybe add a loop and only 
     #
 
 
