@@ -76,7 +76,6 @@ def extract_json_block(text: str) -> str | None:
     return None
 
 
-
 def get_suggestion(db_path: str, criteria_id: int, paper_id: int):
     paper_id, title, authors, abstract = db.retrieve_paper(db_path=db_path, paper_id=paper_id)
 
@@ -106,8 +105,6 @@ def get_suggestion(db_path: str, criteria_id: int, paper_id: int):
     # If the LLM fails, for example with bad output or timeout, there must be a 
     # way to try again.
     # Maybe add a loop and only 
-    #
-
 
     # Parse LLM response
     json_output = extract_json_block(response.choices[0].message.content)

@@ -88,6 +88,39 @@ def retrieve_paper(db_path, paper_id):
 
 # --- criteria table
 
+def save_criteria(db_path, text):
+    with sqlite3.connect(db_path) as con:
+        try:
+            cur = con.cursor()
+            cur.execute("INSERT INTO criteria (text) VALUES (?)", (text,))
+        except sqlite3.IntegrityError as e:
+            if "UNIQUE constraint failed" in str(e):
+                return None
+
+        except sqlite3.Error as e:
+            print("Insert criteria failed:", e)
+            sys.exit(1)
+
+
+def read_last_criteria(db_path: str) -> str:
+    with sqlite3.connect(db_path) as con:
+        try:
+            cur = con.cursor()
+            result = cur.execute("""
+            SELECT text FROM criteria
+            WHERE created_at = (SELECT MAX(created_at) FROM criteria)
+            """).fetchone()
+
+            if result is None:
+                text = ""
+            else:
+                text = result[0]
+        except sqlite3.Error as e:
+            print("Failed to read last criteria:", e)
+            sys.exit(1)
+    return(text)
+
+
 # --- llm_calls table
 
 def save_llm_call(db_path, prompt, response, criteria_id, paper_id):
