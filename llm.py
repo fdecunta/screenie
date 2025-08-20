@@ -10,14 +10,14 @@ import db
 import screenie_printer
 
 
-persona = "You are an assistant of an ecology researcher that is conducting the initial screening of papers for a meta-analysis.\n"
-instruction = "Recommend inclusion or not of a scientific paper and give a one-sentence explanation of your decision.\n"
-context = "You will be given criteria for inclusion. The user will give you the paper's title and abstract.\n"
+persona = "You are an assistant of an ecology researcher that is conducting the initial screening of studies for a meta-analysis.\n"
+instruction = "Recommend inclusion or not of a scientific study and explain your decision.\n"
+context = "You will be given criteria for inclusion. The user will give you the study's title and abstract.\n"
 data_format = """
 Create a valid JSON output. Follow this schema:
 {
     "verdict": "{1 inclusion, 0 not}",
-    "reason": "{one-sentence explanation of your decision}"
+    "reason": "{short explanation supporting the decision}"
 }
 """
 
@@ -52,7 +52,7 @@ def call_llm(system_prompt, msg):
             model = usr_config['model'],
             api_key = usr_config['api_key'],
             messages = messages,
-            temperature = 0,
+            temperature = 0,    # temp = 0 to avoid randomness
     )
     return response
 
@@ -79,8 +79,8 @@ def extract_json_block(text: str) -> str | None:
     return None
 
 
-def get_suggestion(db_path: str, criteria_id: int, paper_id: int):
-    paper_id, title, authors, abstract = db.retrieve_paper(db_path=db_path, paper_id=paper_id)
+def get_suggestion(db_path: str, criteria_id: int, study_id: int):
+    study_id, title, authors, abstract = db.retrieve_study(db_path=db_path, study_id=study_id)
 
     system_prompt = compile_prompt(db_path, persona, instruction, context, data_format)
     msg = f"""
@@ -91,7 +91,7 @@ def get_suggestion(db_path: str, criteria_id: int, paper_id: int):
     {abstract}
     """
 
-    screenie_printer.print_paper(title, authors, abstract)
+    screenie_printer.print_study(title, authors, abstract)
 
     # Call LLM to get suggestion and save the call
     response = call_llm(system_prompt, msg)
@@ -101,7 +101,7 @@ def get_suggestion(db_path: str, criteria_id: int, paper_id: int):
             prompt = system_prompt,
             response = response,
             criteria_id = criteria_id,
-            paper_id = paper_id
+            study_id = study_id
     )
 
     # TODO: Validate LLM response
@@ -119,7 +119,7 @@ def get_suggestion(db_path: str, criteria_id: int, paper_id: int):
     suggestion_id = db.save_screening_result(
             db_path = db_path,
             criteria_id = criteria_id,
-            paper_id = paper_id,
+            study_id = study_id,
             call_id = call_id,
             verdict = verdict,
             reason = reason,

@@ -60,20 +60,20 @@ def read_bib(file_path):
         return None
 
 
-def validate_papers(papers: List[dict]) -> List[Paper]:
-    valid_papers = []
+def validate_studies(studies: List[dict]) -> List[Paper]:
+    valid_studies = []
     errors = []
 
-    for i, paper_data in enumerate(papers):
+    for i, study_data in enumerate(studies):
         try:
-            normalized_paper = normalize_entry_names(paper_data)
-            paper = Paper(**normalized_paper)
-            valid_papers.append(paper)
+            normalized_study = normalize_entry_names(study_data)
+            study = Paper(**normalized_study)
+            valid_studies.append(study)
         except Exception as e:
             click.echo(f"{e}")
             errors.append(e)
 
-    return valid_papers, errors
+    return valid_studies, errors
 
 
 
@@ -87,18 +87,18 @@ def import_from_bib(db_path: str, file_path: str):
         click.secho(f"Error reading file: {e}", fg="red")
         return
 
-    papers_list, errors = validate_papers(bib_database.entries)
+    studies_list, errors = validate_studies(bib_database.entries)
 
-    if papers_list:
-        click.secho(f"✓ Valid papers: {len(papers_list)}", fg="green")
+    if studies_list:
+        click.secho(f"✓ Valid studies: {len(studies_list)}", fg="green")
     if errors:
-        click.secho(f"✗ Invalid papers: {len(errors)}", fg="red")
+        click.secho(f"✗ Invalid studies: {len(errors)}", fg="red")
 
 
     # Insert files into database
     file_id = db.insert_file(db_path, file_path)
 
-    # Insert papers into database
-    imported_count = db.insert_papers(db_path, file_id, papers_list)
+    # Insert studies into database
+    imported_count = db.insert_studies(db_path, file_id, studies_list)
     click.secho(f"Done!")
 

@@ -2,7 +2,7 @@
 """
 LLM-assisted systematic review screening tool
 
-A command-line interface for managing research paper screening databases.
+A command-line interface for managing research study screening databases.
 """
 
 import os
@@ -63,7 +63,7 @@ def init(name):
     type=click.File("rb")
 )
 def import_file(database, input):
-    """Import papers from bibliography file to database."""
+    """Import studies from bibliography file to database."""
     reader.import_from_bib(db_path=database, file_path=input.name)
 
 
@@ -142,7 +142,7 @@ def config_edit():
     type=click.Path(exists=True, file_okay=True, dir_okay=False),
     callback=validate_db_file,
 )
-def screen_papers(database):
+def screen_studies(database):
     import llm
     llm.get_suggestion(database, 1, 1)
 

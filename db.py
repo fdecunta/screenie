@@ -61,27 +61,27 @@ def insert_file(db_path: str, file_path: str):
     return file_id
 
 
-# --- papers table
+# --- studies table
 
-def insert_papers(db_path, file_id, papers_list):
+def insert_studies(db_path, file_id, studies_list):
     with sqlite3.connect(db_path) as con:
         cur = con.cursor()
         cur.executemany("""
-        INSERT INTO papers 
+        INSERT INTO studies 
         (title, authors, year, abstract, url, doi, file_id)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, [(p.title, p.authors, p.year, p.abstract, p.url, p.doi, file_id) for p in papers_list]
+        """, [(p.title, p.authors, p.year, p.abstract, p.url, p.doi, file_id) for p in studies_list]
         )
 
 
-def retrieve_paper(db_path, paper_id):
+def retrieve_study(db_path, study_id):
     with sqlite3.connect(db_path) as con:
         cur = con.cursor()
         res = cur.execute("""
-        SELECT paper_id, title, authors, abstract
-        FROM papers
-        WHERE paper_id = ?
-        """, (paper_id,)
+        SELECT study_id, title, authors, abstract
+        FROM studies
+        WHERE study_id = ?
+        """, (study_id,)
         ).fetchone()
 
     return res
@@ -123,7 +123,7 @@ def read_last_criteria(db_path: str) -> str:
 
 # --- llm_calls table
 
-def save_llm_call(db_path, prompt, response, criteria_id, paper_id):
+def save_llm_call(db_path, prompt, response, criteria_id, study_id):
     """
     Save LLM API call details to the database.
     
@@ -132,7 +132,7 @@ def save_llm_call(db_path, prompt, response, criteria_id, paper_id):
         prompt (str): Prompt sent to LLM
         response: LLM API response object
         criteria_id (int): Criteria ID
-        paper_id (int): Paper ID
+        study_id (int): Paper ID
         
     Returns:
         int: ID of the inserted record
@@ -148,9 +148,9 @@ def save_llm_call(db_path, prompt, response, criteria_id, paper_id):
         cur = con.cursor()
         cur.execute("""
         INSERT INTO llm_calls
-        (model, prompt, input_tokens, output_tokens, criteria_id, paper_id, full_response)
+        (model, prompt, input_tokens, output_tokens, criteria_id, study_id, full_response)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (model, prompt, input_tokens, output_tokens, criteria_id, paper_id, full_response)
+        """, (model, prompt, input_tokens, output_tokens, criteria_id, study_id, full_response)
         )
 
         return cur.lastrowid   
@@ -158,14 +158,14 @@ def save_llm_call(db_path, prompt, response, criteria_id, paper_id):
 
 # --- screening_results table
 
-def save_screening_result(db_path, criteria_id, paper_id, call_id, verdict, reason, human_validated):
+def save_screening_result(db_path, criteria_id, study_id, call_id, verdict, reason, human_validated):
     with sqlite3.connect(db_path) as con:
         cur = con.cursor()
         cur.execute("""
         INSERT INTO screening_results
-        (criteria_id, paper_id, call_id, verdict, reason, human_validated)
+        (criteria_id, study_id, call_id, verdict, reason, human_validated)
         VALUES (?, ?, ?, ?, ?, ?)
-        """, (criteria_id, paper_id, call_id, verdict, reason, human_validated)
+        """, (criteria_id, study_id, call_id, verdict, reason, human_validated)
         )
 
         return cur.lastrowid

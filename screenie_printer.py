@@ -5,7 +5,7 @@ from rich.padding import Padding
 
 console = Console()
 
-def print_paper(title, authors, abstract):
+def print_study(title, authors, abstract):
     title_text = Text(title, style="bold underline")
     authors_text = Text(authors, style="italic")
     abstract_text = Text(abstract)
