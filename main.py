@@ -88,7 +88,7 @@ def studies():
 )
 def import_file(input_file, database):
    """Import studies from bibliography file to database."""
-   reader.import_from_bib(db_path=database, file_path=input_file)
+   reader.import_studies(db_path=database, input_file=input_file)
 
 
 # Criteria command group
