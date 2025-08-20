@@ -67,31 +67,5 @@ def config_edit():
         click.secho(f"Failed to open editor: {e}", fg="red")
 
 
-@cli.command(name="config-help")
-def config_help():
-    """Show how to configure LLM providers using LiteLLM format"""
-
-    config_dir = config.get_config_dir()
-    click.echo("To configure LLM providers, create a config file:")
-    click.echo(f"  {config_dir / 'config.yaml'}")
-    click.echo("\nExample content:")
-    click.echo('''model_list:
-  - model_name: "openai-gpt-4"
-    litellm_params:
-      model: "gpt-4"
-      api_key: "sk-your-key-here"
-
-  - model_name: "anthropic-claude"
-    litellm_params:
-      model: "claude-3-sonnet"
-      api_key: "your-anthropic-key"
-
-  - model_name: "ollama-llama3"
-    litellm_params:
-      model: "ollama/llama3"
-      api_base: "http://localhost:11434"''')
-
-
-
 if __name__ == "__main__":
     cli()
