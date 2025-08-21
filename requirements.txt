@@ -1,9 +1,7 @@
-litellm
-python-dotenv
-fastapi[standard]
-click
 bibtexparser
+click
+litellm
+pandas
 pydantic
 rich
-pandas
 rispy
