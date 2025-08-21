@@ -3,14 +3,8 @@
 ```bash
 screenie screen "my.db" --batch=10
 ```
-- Commands:
-  - init
-  - config
-  - summary ???
-
-- Subgroups of commands, like in git: 
-    - criteria: edit, show
-    - studies: import, show, delete
 
 - Timestamps are not in local time. 
 - Functions to inspect database
+
+- Tokens: inspect use, restrict calls and use, etc.

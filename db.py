@@ -1,6 +1,7 @@
 import click
 import json
 import os
+import pandas as pd
 import sqlite3
 import sys
 
@@ -169,4 +170,36 @@ def save_screening_result(db_path, criteria_id, study_id, call_id, verdict, reas
         )
 
         return cur.lastrowid
+
+
+def export_results(db_path: str, output_format: str, output_file: str):
+    """Export all the studies and what the LLM output"""
+
+    query = """
+    SELECT 
+        st.study_id,
+        st.title,
+        st.authors,
+        st.year,
+        st.abstract,
+        st.url,
+        st.doi,
+        r.verdict,
+        r.reason,
+        r.human_validated
+    FROM studies AS st
+    LEFT JOIN screening_results AS r
+    ON st.study_id = r.study_id
+    """
+
+    with sqlite3.connect(db_path) as con:
+        df = pd.read_sql_query(query, con)
+
+    fmt = output_format.lower()
+    if fmt == "csv":
+        df.to_csv(output_file, index=False)
+    elif fmt in {"xlsx", "excel"}:
+        df.to_excel(output_file, index=False, engine="openpyxl")
+    else:
+        raise ValueError(f"Unsupported format: {output_format}")
 

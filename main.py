@@ -63,14 +63,7 @@ def config_edit():
     except Exception as e:
         click.secho(f"Failed to open editor: {e}", fg="red")
 
-# Studies command group
-@cli.group(name="studies")
-def studies():
-    """Manage studies."""
-    pass
-
-
-@studies.command(name="import")
+@cli.command(name="import")
 @click.option(
    "--from",
    "input_file",
@@ -91,14 +84,7 @@ def import_file(input_file, database):
    reader.import_studies(db_path=database, input_file=input_file)
 
 
-# Criteria command group
-@cli.group(name="criteria")
-def criteria():
-    """Manage inclusion criteria for screening."""
-    pass
-
-
-@criteria.command(name="edit")
+@cli.command(name="criteria")
 @click.argument(
     "database",
     type=click.Path(exists=True, file_okay=True, dir_okay=False),
@@ -144,22 +130,6 @@ def edit_inclusion_criteria(database: str) -> None:
     click.secho("Criteria saved successfully.", fg="green")
 
 
-@criteria.command(name="show")
-@click.argument(
-    "database",
-    type=click.Path(exists=True, file_okay=True, dir_okay=False),
-    callback=validate_db_file
-)
-def show_criteria(database):
-    """Show current inclusion criteria."""
-    last_text = db.read_last_criteria(db_path=database)
-    if last_text:
-        click.echo(last_text)
-    else:
-        click.echo("No criteria defined yet.")
-
-
-
 @cli.command(name="screen")
 @click.argument(
     "database",
@@ -169,7 +139,60 @@ def show_criteria(database):
 def screen_studies(database):
     """Screen studies using LLM assistance."""
     import llm
-    llm.get_suggestion(database, 1, 1)
+    llm.get_suggestion(database, 1, 5)
+
+
+@cli.command(name="status")
+@click.argument(
+    "database",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    callback=validate_db_file,
+)
+def show_status(database):
+    """Show project overview and statistics."""
+    from screenie_printer import print_project_dashboard
+    print_project_dashboard(database)
+
+
+@cli.command(name="list")
+@click.argument(
+    "database", 
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    callback=validate_db_file,
+)
+@click.option("--limit", default=20, help="Number of studies to show")
+def list_studies(database, limit):
+    """List studies in table format."""
+    from screenie_printer import print_studies_table
+    print_studies_table(database, limit)
+
+
+
+@cli.command(name="export")
+@click.argument("db_path", type=click.Path(exists=True))
+@click.option(
+    "--format", "-f",
+    "output_format",
+    type=click.Choice(["csv", "xlsx", "excel"], case_sensitive=False),
+    default="csv",
+    show_default=True,
+    help="Output format."
+)
+@click.option(
+    "--output", "-o",
+    "output_file",
+    type=click.Path(writable=True),
+    required=True,
+    help="Path to save the exported file (extension will be added automatically)."
+)
+def export(db_path, output_format, output_file):
+    """Export all studies and screening results"""
+    ext = ".csv" if output_format.lower() == "csv" else ".xlsx"
+    if not output_file.lower().endswith(ext):
+        output_file += ext
+
+    db.export_results(db_path, output_format, output_file)
+    click.echo(f"Exported results to {output_file} ({output_format})")
 
 
 # Entry point
