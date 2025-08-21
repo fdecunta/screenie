@@ -194,14 +194,18 @@ def list_studies(database, limit):
     "--output", "-o",
     "output_file",
     type=click.Path(writable=True),
-    required=True,
     help="Path to save the exported file (extension will be added automatically)."
 )
 def export(db_path, output_format, output_file):
     """Export all studies and screening results"""
+    if output_file is None:
+        output_file = os.path.splitext(os.path.basename(db_path))[0]
+
     ext = ".csv" if output_format.lower() == "csv" else ".xlsx"
     if not output_file.lower().endswith(ext):
         output_file += ext
+
+    # TODO: Ask to overwrite if file exists
 
     db.export_screening_results(db_path, output_format, output_file)
     click.echo(f"Exported results to {output_file} ({output_format})")

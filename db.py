@@ -178,6 +178,7 @@ def export_screening_results(db_path: str, output_format: str, output_file: str)
         st.title,
         st.authors,
         st.year,
+        st.journal,
         st.abstract,
         st.url,
         st.doi,
