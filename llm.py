@@ -83,7 +83,7 @@ def get_suggestion(db_path: str, study_id: int):
         click.secho("Study {study_id} was already reviewed by LLM", err=True, fg="red")
         return
 
-    study_id, title, authors, abstract = db.fetch_study(db_path=db_path, study_id=study_id)
+    study_id, title, authors, abstract, journal = db.fetch_study(db_path=db_path, study_id=study_id)
 #    criteria_id, criteria = db.fetch_criteria(db_path=db_path)
 
     # NOTE: REMOVE THIS! JUST FOR TESTING

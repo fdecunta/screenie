@@ -1,10 +1,6 @@
 - TESTS!!!!
+- Pass db_path as env
+- Improve SQL work. Don't close transactions early. For example, reading a file may fail but the file was already stored. This is a bug.
 
-```bash
-screenie screen "my.db" --batch=10
-```
-
-- Timestamps are not in local time. 
-- Functions to inspect database
-
+- Make RIS work
 - Tokens: inspect use, restrict calls and use, etc.

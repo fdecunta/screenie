@@ -1,9 +1,11 @@
-import click
 import json
 import os
-import pandas as pd
 import sqlite3
 import sys
+
+import click
+import pandas as pd
+
 
 def init_db(db_name: str, sql_file="schema.sql"):
     conn = sqlite3.connect(db_name)
@@ -45,7 +47,6 @@ def insert_file(db_path: str, file_path: str):
                 VALUES (?, ?)
             """, (filename, file_bytes))
             con.commit()
-#            click.secho(f"Added {fmt_filename} to {fmt_database}", fg="green")
         except sqlite3.IntegrityError as e:
             msg = str(e)
             if "UNIQUE constraint" in msg:
@@ -69,9 +70,9 @@ def insert_studies(db_path, file_id, studies_list):
         cur = con.cursor()
         cur.executemany("""
         INSERT INTO studies 
-        (title, authors, year, abstract, url, doi, file_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, [(p.title, p.authors, p.year, p.abstract, p.url, p.doi, file_id) for p in studies_list]
+        (title, authors, year, abstract, journal, url, doi, file_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, [(i.title, i.authors, i.year, i.abstract, i.journal, i.url, i.doi, file_id) for i in studies_list]
         )
 
 
@@ -79,7 +80,7 @@ def fetch_study(db_path, study_id):
     with sqlite3.connect(db_path) as con:
         cur = con.cursor()
         res = cur.execute("""
-        SELECT study_id, title, authors, abstract
+        SELECT study_id, title, authors, abstract, journal
         FROM studies
         WHERE study_id = ?
         """, (study_id,)
@@ -103,22 +104,19 @@ def save_criteria(db_path, text):
             sys.exit(1)
     return text
 
+
 def read_last_criteria(db_path: str) -> str:
     with sqlite3.connect(db_path) as con:
-        try:
-            cur = con.cursor()
-            result = cur.execute("""
-            SELECT text FROM criteria
-            WHERE created_at = (SELECT MAX(created_at) FROM criteria)
-            """).fetchone()
+        cur = con.cursor()
+        result = cur.execute("""
+        SELECT text FROM criteria
+        WHERE created_at = (SELECT MAX(created_at) FROM criteria)
+        """).fetchone()
 
-            if result is None:
-                text = ""
-            else:
-                text = result[0]
-        except sqlite3.Error as e:
-            print("Failed to read last criteria:", e)
-            sys.exit(1)
+        if result is None:
+            text = ""
+        else:
+            text = result[0]
     return(text)
 
 
@@ -155,7 +153,6 @@ def save_llm_call(db_path, prompt, response, criteria_id, study_id):
         )
 
         return cur.lastrowid   
-
 
 # --- screening_results table
 

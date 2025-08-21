@@ -16,10 +16,9 @@ class Paper(BaseModel):
     authors: str
     year: int
     abstract: str
+    journal: str
     url: str
     doi: Optional[str] = None
-
-
 
 
 def normalize_entry_names(entry: dict) -> dict:
@@ -29,6 +28,7 @@ def normalize_entry_names(entry: dict) -> dict:
         'title': ['title', 'article_title', 'primary_title'],
         'year': ['year', 'publication_year', 'pub_year'],
         'abstract': ['abstract', 'summary'],
+        'journal': ['journal', 'journal_name'],
         'doi': ['doi', 'DOI'],
         'url': ['url', 'link', 'urls']
     }
@@ -95,6 +95,9 @@ def import_from_bib(db_path: str, input_file: str):
     if errors:
         click.secho(f"Invalid studies: {len(errors)}", fg="red")
 
+    # TODO: 
+    # Better open the connection with the DB here and close only if all goes ok
+
     file_id = db.insert_file(db_path, input_file)
     imported_count = db.insert_studies(db_path, file_id, studies_list)
 
@@ -107,11 +110,13 @@ def read_ris(input_file: str):
         entries = rispy.load(f)
 
     return entries
-#    exit()
 
 
 def import_from_ris(db_path: str, input_file: str):
     read_ris(input_file)
+    # TODO 
+    print("FAIL!")
+    sys.exit(1)
 
 
 def import_studies(db_path: str, input_file: str):
@@ -145,5 +150,3 @@ def import_studies(db_path: str, input_file: str):
         sys.exit(1)
     click.secho(f"Done!")
     return 
-
-

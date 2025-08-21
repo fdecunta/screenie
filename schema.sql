@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS studies (
     authors TEXT NOT NULL, 
     year INTEGER NOT NULL,
     abstract TEXT NOT NULL,
+    journal TEXT NOT NULL,
     url TEXT NOT NULL UNIQUE,
     doi TEXT UNIQUE,
     file_id INTEGER NOT NULL,  
