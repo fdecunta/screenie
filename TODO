@@ -2,5 +2,5 @@
 - Pass db_path as env
 - Improve SQL work. Don't close transactions early. For example, reading a file may fail but the file was already stored. This is a bug.
 
-- Make RIS work
+- basically, improve everything
 - Tokens: inspect use, restrict calls and use, etc.

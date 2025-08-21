@@ -81,14 +81,10 @@ def read_bib(file_path):
 
 
 def import_from_bib(db_path: str, input_file: str):
-    try:
-        bib_database = read_bib(input_file)
-        click.secho(f"Found {len(bib_database.entries)} entries")
-    except Exception as e:
-        click.secho(f"Error reading file: {e}", fg="red")
-        return
+    bib_data = read_bib(input_file)
+    click.secho(f"Total entries: {len(bib_database.entries)}")
 
-    studies_list, errors = validate_studies(bib_database.entries)
+    studies_list, errors = validate_studies(bib_data.entries)
 
     if studies_list:
         click.secho(f"Valid studies: {len(studies_list)}", fg="green")
@@ -100,6 +96,7 @@ def import_from_bib(db_path: str, input_file: str):
 
     file_id = db.insert_file(db_path, input_file)
     imported_count = db.insert_studies(db_path, file_id, studies_list)
+    return imported_count
 
 
 # RIS format
@@ -113,10 +110,31 @@ def read_ris(input_file: str):
 
 
 def import_from_ris(db_path: str, input_file: str):
-    read_ris(input_file)
-    # TODO 
-    print("FAIL!")
-    sys.exit(1)
+    ris_data = read_ris(input_file)
+
+    # Two problems with how rispy outputs fields:
+    # - Authors is a list of strings. Must be one string
+    # - URLs is a list uf urls. But only one needed.
+    for i in ris_data:
+        i['authors'] = "; ".join(['authors'])
+        i['url'] = i['urls'][0]
+
+    # TODO: this is the same as in import_from_bib()
+    click.secho(f"Total entries: {len(ris_data)}")
+
+    studies_list, errors = validate_studies(ris_data)
+
+    if studies_list:
+        click.secho(f"Valid studies: {len(studies_list)}", fg="green")
+    if errors:
+        click.secho(f"Invalid studies: {len(errors)}", fg="red")
+
+    # TODO: 
+    # Better open the connection with the DB here and close only if all goes ok
+
+    file_id = db.insert_file(db_path, input_file)
+    imported_count = db.insert_studies(db_path, file_id, studies_list)
+    return imported_count
 
 
 def import_studies(db_path: str, input_file: str):
