@@ -75,7 +75,7 @@ def insert_studies(db_path, file_id, studies_list):
         )
 
 
-def retrieve_study(db_path, study_id):
+def fetch_study(db_path, study_id):
     with sqlite3.connect(db_path) as con:
         cur = con.cursor()
         res = cur.execute("""
@@ -172,7 +172,7 @@ def save_screening_result(db_path, criteria_id, study_id, call_id, verdict, reas
         return cur.lastrowid
 
 
-def export_results(db_path: str, output_format: str, output_file: str):
+def export_screening_results(db_path: str, output_format: str, output_file: str):
     """Export all the studies and what the LLM output"""
 
     query = """
@@ -202,4 +202,43 @@ def export_results(db_path: str, output_format: str, output_file: str):
         df.to_excel(output_file, index=False, engine="openpyxl")
     else:
         raise ValueError(f"Unsupported format: {output_format}")
+
+
+def has_screening_result(db_path: str, study_id: int) -> bool:
+    """Check if a study has a screening result stored in the database"""
+
+    query = "SELECT verdict FROM screening_results WHERE study_id = ?"
+    with sqlite3.connect(db_path) as con:
+        verdict = con.execute(query, (study_id,)).fetchone()
+
+    if verdict is not None:
+        return True
+    else:
+        return False
+
+
+def fetch_pending_studies_ids(db_path: str, batch_size: int) -> list[int]:
+    """Fetch a batch of study IDs that haven't been screened yet.
+
+    Args:
+        db_path: Path to the SQLite database file
+        batch_size: Maximum number of study IDs to retrieve
+
+    Returns:
+        List of study IDs that are not in screening_results table
+    """
+
+    query = """\
+    SELECT study_id
+    FROM studies
+    WHERE study_id NOT IN (SELECT study_id FROM screening_results)
+    ORDER BY study_id
+    LIMIT ?
+    """
+    with sqlite3.connect(db_path) as con:
+       cur = con.cursor()
+       res = cur.execute(query, (batch_size,))
+       studies_ids = [row[0] for row in res.fetchall()]
+
+    return studies_ids
 

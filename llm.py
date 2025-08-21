@@ -24,7 +24,6 @@ Create a valid JSON output. Follow this schema:
 # -----------------------
 
 def compile_prompt(db_path: str, persona: str, instruction: str, context: str, data_format: str) -> str:
-    # TODO: Just read the selected 'prompt' from the database.
 
     user_criteria = db.read_last_criteria(db_path=db_path)
     if len(user_criteria) == 0:
@@ -79,8 +78,16 @@ def extract_json_block(text: str) -> str | None:
     return None
 
 
-def get_suggestion(db_path: str, criteria_id: int, study_id: int):
-    study_id, title, authors, abstract = db.retrieve_study(db_path=db_path, study_id=study_id)
+def get_suggestion(db_path: str, study_id: int):
+    if db.has_screening_result(db_path, study_id):
+        click.secho("Study {study_id} was already reviewed by LLM", err=True, fg="red")
+        return
+
+    study_id, title, authors, abstract = db.fetch_study(db_path=db_path, study_id=study_id)
+#    criteria_id, criteria = db.fetch_criteria(db_path=db_path)
+
+    # NOTE: REMOVE THIS! JUST FOR TESTING
+    criteria_id = 1
 
     system_prompt = compile_prompt(db_path, persona, instruction, context, data_format)
     msg = f"""
@@ -91,7 +98,9 @@ def get_suggestion(db_path: str, criteria_id: int, study_id: int):
     {abstract}
     """
 
-    screenie_printer.print_study(title, authors, abstract)
+    click.echo(f"Title: {title}")
+    click.echo(f"Authors: {authors}")
+    click.echo(f"{abstract}")
 
     # Call LLM to get suggestion and save the call
     response = call_llm(system_prompt, msg)

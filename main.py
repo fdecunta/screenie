@@ -14,6 +14,7 @@ import click
 
 import config
 import db
+import llm
 import reader
 
 
@@ -136,10 +137,21 @@ def edit_inclusion_criteria(database: str) -> None:
     type=click.Path(exists=True, file_okay=True, dir_okay=False),
     callback=validate_db_file,
 )
-def screen_studies(database):
+@click.option("--batch-size", default=1, type=click.IntRange(min=1))
+def screen_studies(database, batch_size):
     """Screen studies using LLM assistance."""
-    import llm
-    llm.get_suggestion(database, 1, 5)
+
+    studies_ids = db.fetch_pending_studies_ids(database, batch_size)
+
+    if len(studies_ids) == 0:
+        click.echo("All studies have been screened. No pending studies found.")
+        return
+
+    if len(studies_ids) < batch_size:
+        click.echo(f"Note: Only {len(studies_ids)} studies pending (requested {batch_size})")
+
+    for study_id in studies_ids:
+        llm.get_suggestion(database, study_id)
 
 
 @cli.command(name="status")
@@ -191,7 +203,7 @@ def export(db_path, output_format, output_file):
     if not output_file.lower().endswith(ext):
         output_file += ext
 
-    db.export_results(db_path, output_format, output_file)
+    db.export_screening_results(db_path, output_format, output_file)
     click.echo(f"Exported results to {output_file} ({output_format})")
 
 
