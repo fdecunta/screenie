@@ -1,13 +1,15 @@
-import bibtexparser
-import click
 import os
 from pathlib import Path
-from pydantic import BaseModel
 import sys
 from typing import Optional, List
 import unicodedata
 
-import db
+import bibtexparser
+import click
+from pydantic import BaseModel
+import rispy
+
+import screenie.db as db
 
 
 class Paper(BaseModel):
@@ -21,28 +23,42 @@ class Paper(BaseModel):
     doi: Optional[str] = None
 
 
-def normalize_entry_names(entry: dict) -> dict:
-    """Convert various field names to canonical format"""
+def clean_strings(entry: dict) -> None:
+    """Normalize all string values in-place. This helps with difficult chars and symbols"""
+    for key in entry:
+        value = entry[key]
+        if isinstance(value, str):
+            entry[key] = unicodedata.normalize("NFKC", value)
+
+
+def normalize_field_name(raw_name: str) -> str:
+    """Convert field name to the expected name by Paper class"""
     field_mappings = {
         'authors': ['author', 'authors', 'first_authors'],
         'title': ['title', 'article_title', 'primary_title'],
         'year': ['year', 'publication_year', 'pub_year'],
         'abstract': ['abstract', 'summary'],
         'journal': ['journal', 'journal_name'],
-        'doi': ['doi', 'DOI'],
+        'doi': ['doi'],
         'url': ['url', 'link', 'urls']
     }
-    
-    normalized = {}
+
     for canonical_field, possible_names in field_mappings.items():
-        for field_name in possible_names:
-            if field_name in entry:
-                normalized[canonical_field] = entry[field_name]
-                break
-        else:
-            normalized[canonical_field] = None  
+        if raw_name.lower() in possible_names:
+            return canonical_field
+
+    # If don't match return the raw_name
+    return raw_name
     
-    return normalized
+
+def normalize_entry(entry: dict) -> dict:
+    """Convert various field names to their canonical format"""
+    normalized_entry = {}
+    for old_name in entry.keys():
+        new_name = normalize_field_name(old_name)
+        normalized_entry[new_name] = entry[old_name]
+
+    return normalized_entry
 
 
 def validate_studies(studies: List[dict]) -> List[Paper]:
@@ -51,7 +67,7 @@ def validate_studies(studies: List[dict]) -> List[Paper]:
 
     for i, study_data in enumerate(studies):
         try:
-            normalized_study = normalize_entry_names(study_data)
+            normalized_study = normalize_entry(study_data)
             study = Paper(**normalized_study)
             valid_studies.append(study)
         except Exception as e:
@@ -61,23 +77,16 @@ def validate_studies(studies: List[dict]) -> List[Paper]:
     return valid_studies, errors
 
 
-# BIB format
 def read_bib(file_path):
-    """Read bib file"""
-    try:
-        with open(file_path, 'r', encoding='utf-8') as bibtex_file:
-            parser = bibtexparser.bparser.BibTexParser()
-            bib_database = bibtexparser.load(bibtex_file, parser=parser)
-        
-        for entry in bib_database.entries:
-            for key, value in entry.items():
-                if isinstance(value, str):
-                    entry[key] = unicodedata.normalize('NFKC', value)
-        
-        return bib_database
-    except Exception as e:
-        click.secho(f"Error reading {file_path}: {e}", err=True, fg="red")
-        return None
+    """Read data from .bib file"""
+    with open(file_path, 'r', encoding='utf-8') as bibtex_file:
+        parser = bibtexparser.bparser.BibTexParser()
+        bib_database = bibtexparser.load(bibtex_file, parser=parser)
+    
+    for entry in bib_database.entries:
+        clean_strings(entry)
+
+    return bib_database
 
 
 def import_from_bib(db_path: str, input_file: str):
@@ -99,12 +108,12 @@ def import_from_bib(db_path: str, input_file: str):
     return imported_count
 
 
-# RIS format
 def read_ris(input_file: str):
-    import rispy
-
+    """Read data from .ris file"""
     with open(input_file, "r", encoding="utf-8") as f:
         entries = rispy.load(f)
+        for entry in entries:
+            clean_strings(entry)
 
     return entries
 

@@ -1,5 +1,6 @@
 bibtexparser
 click
+coverage
 litellm
 pandas
 pydantic
