@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "screenie"
+version = "0.1.0"
+description = "LLM-Assisted Systematic Review Screening Tool"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Facundo Decunta", email = "fdecunta@agro.uba.ar"}
+]
+keywords = ["systematic-review", "llm", "research", "screening", "cli"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Text Processing",
+]
+
+dependencies = [
+    "bibtexparser",
+    "click",
+    "litellm",
+    "pandas",
+    "pydantic",
+    "rich",
+    "rispy",
+    "openpyxl",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+dev = [
+    "coverage",
+    "pytest",
+    "black",
+    "flake8",
+]
+
+[project.urls]
+Homepage = "https://github.com/fdecunta/screenie"
+Repository = "https://github.com/fdecunta/screenie"
+Issues = "https://github.com/fdecunta/screenie/issues"
+
+[project.scripts]
+screenie = "screenie.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["screenie*"]
+
+[tool.setuptools.package-data]
+screenie = ["*.sql"]
+
+[tool.coverage.run]
+source = ["screenie"]
