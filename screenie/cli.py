@@ -12,10 +12,11 @@ import sys
 
 import click
 
-import config
-import db
-import llm
-import reader
+import screenie.config as config
+import screenie.db as db
+import screenie.llm as llm
+import screenie.reader as reader
+from screenie.screenie_printer import print_project_dashboard, print_studies_table
 
 
 # Helper functions
@@ -162,7 +163,6 @@ def screen_studies(database, batch_size):
 )
 def show_status(database):
     """Show project overview and statistics."""
-    from screenie_printer import print_project_dashboard
     print_project_dashboard(database)
 
 
@@ -175,7 +175,6 @@ def show_status(database):
 @click.option("--limit", default=20, help="Number of studies to show")
 def list_studies(database, limit):
     """List studies in table format."""
-    from screenie_printer import print_studies_table
     print_studies_table(database, limit)
 
 

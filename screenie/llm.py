@@ -5,9 +5,11 @@ import os
 import re
 import sys
 
-import config
-import db
-import screenie_printer
+import screenie.config as config
+import screenie.db as db
+import screenie.screenie_printer as screenie_printer
+
+# TODO: printer shouldn't be here i think
 
 
 persona = "You are an assistant of an ecology researcher that is conducting the initial screening of studies for a meta-analysis.\n"
