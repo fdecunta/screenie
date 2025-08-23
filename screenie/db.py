@@ -1,8 +1,8 @@
+import importlib.resources
 import json
 import os
 import sqlite3
 import sys
-import importlib.resources
 
 import click
 import pandas as pd
@@ -21,10 +21,7 @@ def init_db(db_name: str):
 def insert_file(db_path: str, input_file: str):
     filename = os.path.basename(input_file)
 
-    fmt_filename = click.format_filename(filename)
-    fmt_database = click.format_filename(os.path.basename(db_path))
-
-    # read file as bytes to save as BLOB
+    # Read file as bytes to save as BLOB
     with open(input_file, "rb") as f:
         file_bytes = f.read()
 
@@ -40,8 +37,6 @@ def insert_file(db_path: str, input_file: str):
     return file_id
 
 
-# --- studies table
-
 def insert_studies(db_path, file_id, studies_list):
     with sqlite3.connect(db_path) as con:
         cur = con.cursor()
@@ -49,37 +44,42 @@ def insert_studies(db_path, file_id, studies_list):
         INSERT INTO studies 
         (title, authors, year, abstract, journal, url, doi, file_id)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, [(i.title, i.authors, i.year, i.abstract, i.journal, i.url, i.doi, file_id) for i in studies_list]
-        )
+        """, [(i.title, i.authors, i.year, i.abstract, i.journal, i.url, i.doi, file_id) for i in studies_list])
 
 
-def fetch_study(db_path, study_id):
+def fetch_study(db_path, study_id) -> tuple[int, str, str]:
     with sqlite3.connect(db_path) as con:
         cur = con.cursor()
-        res = cur.execute("""
-        SELECT study_id, title, authors, abstract, journal
+        study = cur.execute("""
+        SELECT study_id, title, abstract
         FROM studies
         WHERE study_id = ?
         """, (study_id,)
         ).fetchone()
 
-    return res
+    return study
 
-# --- criteria table
 
-def save_criteria(db_path, text):
+def save_criteria(db_path, text) -> str:
     with sqlite3.connect(db_path) as con:
-        try:
-            cur = con.cursor()
-            cur.execute("INSERT INTO criteria (text) VALUES (?)", (text,))
-        except sqlite3.IntegrityError as e:
-            if "UNIQUE constraint failed" in str(e):
-                return None
+        cur = con.cursor()
+        cur.execute("INSERT INTO criteria (text) VALUES (?)", (text,))
 
-        except sqlite3.Error as e:
-            print("Insert criteria failed:", e)
-            sys.exit(1)
     return text
+
+
+def fetch_criteria(db_path: str) -> tuple[int, str]:
+    with sqlite3.connect(db_path) as con:
+        cur = con.cursor()
+        result = cur.execute("""
+        SELECT criteria_id, text FROM criteria
+        WHERE created_at = (SELECT MAX(created_at) FROM criteria)
+        """).fetchone()
+
+        if result is None:
+            raise ValueError("No criteria found. Please define criteria first.")
+
+        return result
 
 
 def read_last_criteria(db_path: str) -> str:
@@ -193,15 +193,7 @@ def has_screening_result(db_path: str, study_id: int) -> bool:
 
 
 def fetch_pending_studies_ids(db_path: str, batch_size: int) -> list[int]:
-    """Fetch a batch of study IDs that haven't been screened yet.
-
-    Args:
-        db_path: Path to the SQLite database file
-        batch_size: Maximum number of study IDs to retrieve
-
-    Returns:
-        List of study IDs that are not in screening_results table
-    """
+    """Fetch a batch of study IDs that haven't been screened yet."""
 
     query = """\
     SELECT study_id

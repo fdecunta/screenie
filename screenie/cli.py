@@ -147,7 +147,11 @@ def edit_inclusion_criteria(database: str) -> None:
         click.echo("No criteria provided.")
         return
 
-    saved_criteria = db.save_criteria(db_path=database, text=criteria)
+    try:
+        saved_criteria = db.save_criteria(db_path=database, text=criteria)
+    except Exception as e:
+        click.echo(f"Failed to save criteria: {e}")
+
     if saved_criteria is None:
         click.echo("The same criteria already exists. No changes made.")
         return

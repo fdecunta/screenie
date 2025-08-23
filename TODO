@@ -1,4 +1,5 @@
 - TESTS!!!!
+- The 'status' over a project must show if it's well configured
 - Pass db_path as env
 - Improve SQL work. Don't close transactions early. For example, reading a file may fail but the file was already stored. This is a bug.
 - Let the user finetune the configuration for the LLMs using litellm yaml config.

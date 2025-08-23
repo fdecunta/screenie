@@ -85,11 +85,9 @@ def get_suggestion(db_path: str, study_id: int):
         click.secho("Study {study_id} was already reviewed by LLM", err=True, fg="red")
         return
 
-    study_id, title, authors, abstract, journal = db.fetch_study(db_path=db_path, study_id=study_id)
-#    criteria_id, criteria = db.fetch_criteria(db_path=db_path)
+    study_id, title, abstract = db.fetch_study(db_path=db_path, study_id=study_id)
 
-    # NOTE: REMOVE THIS! JUST FOR TESTING
-    criteria_id = 1
+    criteria_id, criteria = db.fetch_criteria(db_path=db_path)
 
     system_prompt = compile_prompt(db_path, persona, instruction, context, data_format)
     msg = f"""
@@ -100,8 +98,7 @@ def get_suggestion(db_path: str, study_id: int):
     {abstract}
     """
 
-    click.echo(f"Title: {title}")
-    click.echo(f"Authors: {authors}")
+    click.echo(f"{title}")
     click.echo(f"{abstract}")
 
     # Call LLM to get suggestion and save the call
@@ -116,7 +113,6 @@ def get_suggestion(db_path: str, study_id: int):
     )
 
     # TODO: Validate LLM response
-    #
     # If the LLM fails, for example with bad output or timeout, there must be a 
     # way to try again.
     # Maybe add a loop and only 
@@ -137,4 +133,6 @@ def get_suggestion(db_path: str, study_id: int):
             human_validated = 0
     )
 
-    screenie_printer.print_llm_suggestion(verdict, reason)
+    click.echo(f"Verdict: {verdict}")
+    click.echo(f"Reason: {reason}")
+
