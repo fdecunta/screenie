@@ -65,6 +65,8 @@ def validate_studies(studies: List[dict]) -> List[Paper]:
     valid_studies = []
     errors = []
 
+    # TODO something exists?
+
     for i, study_data in enumerate(studies):
         try:
             normalized_study = normalize_entry(study_data)
@@ -89,23 +91,9 @@ def read_bib(file_path):
     return bib_database
 
 
-def import_from_bib(db_path: str, input_file: str):
+def import_from_bib(input_file: str):
     bib_database = read_bib(input_file)
-    click.secho(f"Total entries: {len(bib_database.entries)}")
-
-    studies_list, errors = validate_studies(bib_database.entries)
-
-    if studies_list:
-        click.secho(f"Valid studies: {len(studies_list)}", fg="green")
-    if errors:
-        click.secho(f"Invalid studies: {len(errors)}", fg="red")
-
-    # TODO: 
-    # Better open the connection with the DB here and close only if all goes ok
-
-    file_id = db.insert_file(db_path, input_file)
-    imported_count = db.insert_studies(db_path, file_id, studies_list)
-    return imported_count
+    return bib_database.entries
 
 
 def read_ris(input_file: str):
@@ -118,7 +106,7 @@ def read_ris(input_file: str):
     return entries
 
 
-def import_from_ris(db_path: str, input_file: str):
+def import_from_ris(input_file: str):
     ris_data = read_ris(input_file)
 
     # Two problems with how rispy outputs fields:
@@ -128,52 +116,41 @@ def import_from_ris(db_path: str, input_file: str):
         i['authors'] = "; ".join(['authors'])
         i['url'] = i['urls'][0]
 
-    # TODO: this is the same as in import_from_bib()
-    click.secho(f"Total entries: {len(ris_data)}")
-
-    studies_list, errors = validate_studies(ris_data)
-
-    if studies_list:
-        click.secho(f"Valid studies: {len(studies_list)}", fg="green")
-    if errors:
-        click.secho(f"Invalid studies: {len(errors)}", fg="red")
-
-    # TODO: 
-    # Better open the connection with the DB here and close only if all goes ok
-
-    file_id = db.insert_file(db_path, input_file)
-    imported_count = db.insert_studies(db_path, file_id, studies_list)
-    return imported_count
+    return ris_data
 
 
 def import_studies(db_path: str, input_file: str):
     """Import bibliography data from a file into the database.
  
     Automatically detects the file format based on extension and uses
-    the appropriate import function. Supports BibTeX (.bib) and RIS (.ris) formats.
- 
-    Args:
-        db_path: Path to the SQLite database file
-        input_file: Path to the bibliography file to import
- 
-    Raises:
-        SystemExit: If the file format is not supported
+    the appropriate import function. 
+
+    For the moment, it only supports BibTeX and RIS formats.
     """
     file_path = Path(input_file)
     extension = file_path.suffix.lower()
 
     if extension == ".bib":
-        import_from_bib(db_path=db_path, input_file=input_file)
+        imported_data = import_from_bib(input_file)
     elif extension == ".ris":
-        import_from_ris(db_path=db_path, input_file=input_file)
+        imported_data = import_from_ris(input_file)
     else:
-        click.secho(
-            f"Error: Unsupported file format '{extension}'. "
-            f"Only .bib and .ris files are supported.\\n"
-            f"File: {input_file}", 
-            err=True, 
-            fg="red"
-        )
-        sys.exit(1)
+        raise ValueError(f"Unsupported file format '{extension}' \nOnly .bib and .ris files are supported")
+
+
+    studies_list, errors = validate_studies(imported_data)
+
+    click.echo(f"Total entries: {len(ris_data)}")
+    if studies_list:
+        click.secho(f"Valid studies: {len(studies_list)}", fg="green")
+    if errors:
+        click.secho(f"Invalid studies: {len(errors)}", fg="red")
+
+    # TODO: Better open the connection with the DB here and close only if all goes ok
+
+    file_id = db.insert_file(db_path, input_file)
+    imported_count = db.insert_studies(db_path, file_id, studies_list)
+
+    
     click.secho(f"Done!")
     return 

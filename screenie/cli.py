@@ -84,8 +84,11 @@ def config_edit():
    help="Database file to import to"
 )
 def import_file(input_file, database):
-   """Import studies from bibliography file to database."""
-   reader.import_studies(db_path=database, input_file=input_file)
+    """Import studies from bibliography file to database."""
+    try:
+        reader.import_studies(db_path=database, input_file=input_file)
+    except ValueError as e:
+        click.secho(f"Error: {e}", err=True, fg="red")
 
 
 @cli.command(name="criteria")

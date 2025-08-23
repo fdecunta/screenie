@@ -6,7 +6,8 @@ from screenie.reader import (
     clean_strings,
     normalize_field_name,
     normalize_entry,
-    read_bib
+    read_bib,
+    read_ris
 )
 
 
@@ -25,7 +26,8 @@ class TestNormalizeStrings(unittest.TestCase):
         self.assertEqual(entry["author"], "José")
         self.assertEqual(entry["year"], 2024)
 
-class TestReaderAuxiliaryFunctions(unittest.TestCase):
+
+class TestReaderNormalizeEntries(unittest.TestCase):
 
     def test_normalize_field_name(self):
         # Names to test are those from Paper class:
@@ -47,6 +49,7 @@ class TestReaderAuxiliaryFunctions(unittest.TestCase):
 
 
 class TestReadBib(unittest.TestCase):
+
     def test_read_bib(self):
         example_bib = """
         @article{MARKJEZ2025,
@@ -70,6 +73,35 @@ class TestReadBib(unittest.TestCase):
             self.assertIsNotNone(bib_db)
             self.assertEqual(bib_db.entries[0]["title"], "The most amazing paper in the world")
             self.assertEqual(bib_db.entries[0]["abstract"], "bla bla bla")
+        finally:
+            os.remove(tmp_path)
+
+
+class TestReadRis(unittest.TestCase):
+
+    def test_read_bib(self):
+        example_ris = """\
+TY  - JOUR
+T1  - Cool Title
+AU  - John, Cool
+AU  - Tim, Nice
+JO  - Journal of Cool Guys
+DO  - https://doi.org/10.1016/0022-0981(88)90191-8
+UR  - https://www.url.com
+AB  - Amazing abstract here
+ER  - 
+"""
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".ris") as tmp:
+            tmp.write(example_ris.encode("utf-8"))
+            tmp_path = tmp.name
+    
+        try:
+            ris_db = read_ris(tmp_path)
+            self.assertIsNotNone(ris_db)
+            self.assertEqual(ris_db[0]["primary_title"], "Cool Title")
+            self.assertEqual(ris_db[0]["abstract"], "Amazing abstract here")
+            self.assertEqual(ris_db[0]["journal_name"], "Journal of Cool Guys")
+            self.assertEqual(ris_db[0]["urls"][0], "https://www.url.com")
         finally:
             os.remove(tmp_path)
 
