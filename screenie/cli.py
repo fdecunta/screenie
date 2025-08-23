@@ -94,12 +94,19 @@ def import_file(input_file, database):
         click.secho(f"Valid studies: {len(studies_list)}", fg="green")
         click.secho(f"Invalid studies: {len(errors)}", fg="red")
     
-        # TODO: Better open the connection with the DB here and close only if all goes ok
-    
+    # TODO: Better open the connection with the DB here and close only if all goes ok
+    # TODO: Improve error msgs for errors   
+    try:
         file_id = db.insert_file(db_path=database, input_file=input_file)
-        imported_count = db.insert_studies(db_path=database, file_id=file_id, studies_list=studies_list)
+    except Exception as e:
+        click.secho(f"Error trying to save file into database: {e}", err=True, fg="red")
         
-        click.secho(f"Done!")
+    try:       
+        imported_count = db.insert_studies(db_path=database, file_id=file_id, studies_list=studies_list)
+    except Exception as e:
+        click.secho(f"Error trying to save studies into database: {e}", err=True, fg="red")
+        
+    click.secho(f"Done!")
 
 
 

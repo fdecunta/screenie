@@ -30,24 +30,12 @@ def insert_file(db_path: str, input_file: str):
 
     with sqlite3.connect(db_path) as con:
         cur = con.cursor()
-        try:
-            cur.execute("""
-                INSERT INTO input_files (name, content)
-                VALUES (?, ?)
-            """, (filename, file_bytes))
-            con.commit()
-        except sqlite3.IntegrityError as e:
-            msg = str(e)
-            if "UNIQUE constraint" in msg:
-                click.secho(f"File {fmt_filename} already exists in the database.", fg="red", err=True)
-            else:
-                click.secho(f"Failed to import {fmt_filename}: {msg}", fg="red", err=True)
-            sys.exit(1)
-        except sqlite3.DatabaseError as e:
-            click.secho(f"Database error: {e}", fg="red", err=True)
-            sys.exit(1)
+        cur.execute("""
+            INSERT INTO input_files (name, content)
+            VALUES (?, ?)
+        """, (filename, file_bytes))
 
-        file_id = cur.execute("SELECT file_id FROM input_files WHERE name = ?", (filename,)).fetchone()[0]
+    file_id = cur.execute("SELECT file_id FROM input_files WHERE name = ?", (filename,)).fetchone()[0]
 
     return file_id
 
