@@ -106,7 +106,7 @@ def read_ris(input_file: str):
     return ris_data
 
 
-def import_studies(db_path: str, input_file: str):
+def import_studies(input_file: str):
     """Import bibliography data from a file into the database.
  
     Automatically detects the file format based on extension and uses
@@ -124,20 +124,4 @@ def import_studies(db_path: str, input_file: str):
     else:
         raise ValueError(f"Unsupported file format '{extension}' \nOnly .bib and .ris files are supported")
 
-
-    studies_list, errors = validate_studies(imported_data)
-
-    click.echo(f"Total entries: {len(ris_data)}")
-    if studies_list:
-        click.secho(f"Valid studies: {len(studies_list)}", fg="green")
-    if errors:
-        click.secho(f"Invalid studies: {len(errors)}", fg="red")
-
-    # TODO: Better open the connection with the DB here and close only if all goes ok
-
-    file_id = db.insert_file(db_path, input_file)
-    imported_count = db.insert_studies(db_path, file_id, studies_list)
-
-    
-    click.secho(f"Done!")
-    return 
+    return validate_studies(imported_data)

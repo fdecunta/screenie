@@ -18,14 +18,14 @@ def init_db(db_name: str):
             cur.executescript(f.read())
 
 
-def insert_file(db_path: str, file_path: str):
-    filename = os.path.basename(file_path)
+def insert_file(db_path: str, input_file: str):
+    filename = os.path.basename(input_file)
 
     fmt_filename = click.format_filename(filename)
     fmt_database = click.format_filename(os.path.basename(db_path))
 
     # read file as bytes to save as BLOB
-    with open(file_path, "rb") as f:
+    with open(input_file, "rb") as f:
         file_bytes = f.read()
 
     with sqlite3.connect(db_path) as con:

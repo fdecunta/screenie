@@ -86,9 +86,21 @@ def config_edit():
 def import_file(input_file, database):
     """Import studies from bibliography file to database."""
     try:
-        reader.import_studies(db_path=database, input_file=input_file)
+        studies_list, errors = reader.import_studies(input_file=input_file)
     except ValueError as e:
         click.secho(f"Error: {e}", err=True, fg="red")
+    else:
+        click.echo(f"Total entries: {len(studies_list) + len(errors)}")
+        click.secho(f"Valid studies: {len(studies_list)}", fg="green")
+        click.secho(f"Invalid studies: {len(errors)}", fg="red")
+    
+        # TODO: Better open the connection with the DB here and close only if all goes ok
+    
+        file_id = db.insert_file(db_path=database, input_file=input_file)
+        imported_count = db.insert_studies(db_path=database, file_id=file_id, studies_list=studies_list)
+        
+        click.secho(f"Done!")
+
 
 
 @cli.command(name="criteria")
