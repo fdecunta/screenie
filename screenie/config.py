@@ -2,35 +2,84 @@ import yaml
 import platform
 from pathlib import Path
 
+
+def create_config_file(config_file):
+    """
+    Create config file following the format used by Litellm
+    https://docs.litellm.ai/docs/proxy/configs
+    """
+    config_template = {
+        "default": "openai-gpt-4",
+        "model_list": [
+            {
+                "model_name": "openai-gpt-4",
+                "litellm_params": {
+                    "model": "gpt-4",
+                    "api_key": "sk-your-openai-key-here"
+                }
+            },
+            {
+                "model_name": "anthropic-claude",
+                "litellm_params": {
+                    "model": "claude-3-sonnet",
+                    "api_key": "your-anthropic-key-here"
+                }
+            },
+            {
+                "model_name": "DigitalOcean-llama3.3",
+                "litellm_params": {
+                    "model": "gradient_ai/llama3.3-70b-instruct",
+                    "api_key": "DigitalOcean-endpoint-inference-key"
+                }
+            }
+        ]
+    }
+
+    with open(config_file, "w") as f:
+        yaml.dump(config_template, f, default_flow_style=False, sort_keys=False)
+
+
 def get_config_dir():
-    """Get OS-appropriate config directory"""
+    """Get OS-appropriate config directory. Create if not exist"""
     system = platform.system()
     if system == "Windows":
-        return Path.home() / "AppData" / "Local" / "Screenie"
+        config_dir = Path.home() / "AppData" / "Local" / "Screenie"
     elif system == "Darwin":
-        return Path.home() / "Library" / "Application Support" / "Screenie"
+        config_dir = Path.home() / "Library" / "Application Support" / "Screenie"
     else:
-        return Path.home() / ".config" / "screenie"
+        config_dir = Path.home() / ".config" / "screenie"
+
+    if not config_dir.exists():
+        config_dir.mkdir()
+
+    return config_dir
 
 
-def get_config():
-    """Load config from file - returns None if not found"""
+def get_config_file():
+    """Get path to configuration file"""
     config_dir = get_config_dir()
     config_file = config_dir / "config.yaml"
-    
+
     if not config_file.exists():
-        return None
-        
-    try:
-        with open(config_file, 'r') as f:
-            return yaml.safe_load(f)
-    except (yaml.YAMLError, FileNotFoundError):
-        return None
+        create_config_file(config_file)
+
+    return config_file
 
 
-def get_provider_config(provider_name=None):
+def read_config_file():
+    """Read config file"""
+    config_file = get_config_file()
+
+    if not config_file.exists():
+        create_config_file(config_file)
+    
+    with open(config_file, 'r') as f:
+        return yaml.safe_load(f)
+
+
+def get_model_config(provider_name=None):
     """Get provider config from LiteLLM-style config"""
-    config = get_config()
+    config = read_config_file()
     if not config:
         raise ValueError("No configuration file found")
     

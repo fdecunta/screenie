@@ -2,32 +2,21 @@ import json
 import os
 import sqlite3
 import sys
+import importlib.resources
 
 import click
 import pandas as pd
 
 
-def init_db(db_name: str, sql_file="schema.sql"):
-    conn = sqlite3.connect(db_name)
-    cur = conn.cursor()
+def init_db(db_name: str):
+    """Create database"""
+    sql_schema = "schema.sql"
 
-    with open(sql_file, "r", encoding="utf-8") as f:
-        cur.executescript(f.read())
-    conn.commit()
+    with sqlite3.connect(db_name) as con:
+        cur = con.cursor()
+        with importlib.resources.open_text("screenie", sql_schema, encoding="utf-8") as f:
+            cur.executescript(f.read())
 
-    # Test if it was created ok
-    try:
-        cur.execute("SELECT * FROM input_files;")
-        _ = cur.fetchone()
-        success = True
-    except sqlite3.OperationalError:
-        success = False
-
-    conn.close()
-
-    return success
-
-# --- input_files table
 
 def insert_file(db_path: str, file_path: str):
     filename = os.path.basename(file_path)

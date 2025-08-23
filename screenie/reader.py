@@ -90,10 +90,10 @@ def read_bib(file_path):
 
 
 def import_from_bib(db_path: str, input_file: str):
-    bib_data = read_bib(input_file)
+    bib_database = read_bib(input_file)
     click.secho(f"Total entries: {len(bib_database.entries)}")
 
-    studies_list, errors = validate_studies(bib_data.entries)
+    studies_list, errors = validate_studies(bib_database.entries)
 
     if studies_list:
         click.secho(f"Valid studies: {len(studies_list)}", fg="green")

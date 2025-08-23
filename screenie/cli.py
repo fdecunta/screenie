@@ -6,6 +6,7 @@ A command-line interface for managing research study screening databases.
 """
 
 import os
+from pathlib import Path
 import platform
 import subprocess
 import sys
@@ -38,32 +39,33 @@ def cli():
 @cli.command(name="init")
 @click.argument("name")
 def init(name):
-    """Initialize a screener database in current directory."""
-    db_name = name + ".db"
-    
-    if os.path.exists(db_name):
+    """Initialize a screener database."""
+    db_name = Path(name + ".db")
+
+    if db_name.exists():
         click.secho(f"Error: database {db_name} already exists.", err=True, fg="red")
         sys.exit(1)
     
-    fmt_db_name = click.format_filename(db_name)
-    
-    if db.init_db(db_name):
-        click.secho(f"Initialized {fmt_db_name}", fg="green")
-    else:
-        click.echo(f"Error: failed to initialize database '{fmt_db_name}'", err=True, fg="red")
+    try:
+        db.init_db(db_name)
+    except Exception as e:
+        click.secho(f"Error: failed to initialize database '{db_name}': {e}", err=True, fg="red")
         sys.exit(1)
+    else:
+        click.secho(f"Initialized {db_name}", fg="green")
+
 
 
 @cli.command(name="config")
 def config_edit():
     """Open config file in default text editor."""
-    config_dir = config.get_config_dir()
-    config_file = config_dir / "config.yaml"
+    config_file = config.get_config_file()
     
     try:
         click.edit(filename=str(config_file))
     except Exception as e:
         click.secho(f"Failed to open editor: {e}", fg="red")
+
 
 @cli.command(name="import")
 @click.option(

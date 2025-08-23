@@ -42,7 +42,7 @@ def compile_prompt(db_path: str, persona: str, instruction: str, context: str, d
 
 def call_llm(system_prompt, msg):
     # Load config
-    usr_config = config.get_provider_config()
+    usr_config = config.get_model_config()
  
     messages = [
             {"role": "system", "content": system_prompt},
