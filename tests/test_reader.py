@@ -79,7 +79,7 @@ class TestReadBib(unittest.TestCase):
 
 class TestReadRis(unittest.TestCase):
 
-    def test_read_bib(self):
+    def test_read_ris(self):
         example_ris = """\
 TY  - JOUR
 T1  - Cool Title
