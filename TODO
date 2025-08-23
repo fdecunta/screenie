@@ -1,6 +1,5 @@
 - TESTS!!!!
 - Pass db_path as env
-- Let the user finetune the configuration for the LLMs using litellm yaml config.
 - Improve SQL work. Don't close transactions early. For example, reading a file may fail but the file was already stored. This is a bug.
-- Basically, improve everything
+- Let the user finetune the configuration for the LLMs using litellm yaml config.
 - Tokens: inspect use, restrict calls and use, etc.

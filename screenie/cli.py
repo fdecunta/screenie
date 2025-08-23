@@ -89,24 +89,23 @@ def import_file(input_file, database):
         studies_list, errors = reader.import_studies(input_file=input_file)
     except ValueError as e:
         click.secho(f"Error: {e}", err=True, fg="red")
-    else:
-        click.echo(f"Total entries: {len(studies_list) + len(errors)}")
-        click.secho(f"Valid studies: {len(studies_list)}", fg="green")
-        click.secho(f"Invalid studies: {len(errors)}", fg="red")
+        return
+
+    click.echo(f"Total entries: {len(studies_list) + len(errors)}")
+    click.secho(f"Valid studies: {len(studies_list)}", fg="green")
+    click.secho(f"Invalid studies: {len(errors)}", fg="red")
+
+    if not studies_list:
+        click.secho("No valid studies to import.", fg="yellow")
+        return
     
-    # TODO: Better open the connection with the DB here and close only if all goes ok
-    # TODO: Improve error msgs for errors   
     try:
         file_id = db.insert_file(db_path=database, input_file=input_file)
-    except Exception as e:
-        click.secho(f"Error trying to save file into database: {e}", err=True, fg="red")
-        
-    try:       
         imported_count = db.insert_studies(db_path=database, file_id=file_id, studies_list=studies_list)
+        click.secho(f"Done!")
     except Exception as e:
-        click.secho(f"Error trying to save studies into database: {e}", err=True, fg="red")
+        click.secho(f"Database error: {e}", err=True, fg="red")
         
-    click.secho(f"Done!")
 
 
 
