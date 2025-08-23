@@ -71,8 +71,8 @@ class TestReadBib(unittest.TestCase):
         try:
             bib_db = read_bib(tmp_path)
             self.assertIsNotNone(bib_db)
-            self.assertEqual(bib_db.entries[0]["title"], "The most amazing paper in the world")
-            self.assertEqual(bib_db.entries[0]["abstract"], "bla bla bla")
+            self.assertEqual(bib_db[0]["title"], "The most amazing paper in the world")
+            self.assertEqual(bib_db[0]["abstract"], "bla bla bla")
         finally:
             os.remove(tmp_path)
 
@@ -101,7 +101,7 @@ ER  -
             self.assertEqual(ris_db[0]["primary_title"], "Cool Title")
             self.assertEqual(ris_db[0]["abstract"], "Amazing abstract here")
             self.assertEqual(ris_db[0]["journal_name"], "Journal of Cool Guys")
-            self.assertEqual(ris_db[0]["urls"][0], "https://www.url.com")
+            self.assertEqual(ris_db[0]["url"], "https://www.url.com")
         finally:
             os.remove(tmp_path)
 

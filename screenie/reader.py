@@ -88,33 +88,20 @@ def read_bib(file_path):
     for entry in bib_database.entries:
         clean_strings(entry)
 
-    return bib_database
-
-
-def import_from_bib(input_file: str):
-    bib_database = read_bib(input_file)
     return bib_database.entries
 
 
 def read_ris(input_file: str):
     """Read data from .ris file"""
     with open(input_file, "r", encoding="utf-8") as f:
-        entries = rispy.load(f)
-        for entry in entries:
+        ris_data = rispy.load(f)
+        for entry in ris_data:
+            # Two problems with rispy outputs:
+            # - Authors is a list of strings. Must be one string
+            # - URLs is a list uf urls. But only one needed.
+            entry['authors'] = "; ".join(entry['authors'])
+            entry['url'] = entry['urls'][0]
             clean_strings(entry)
-
-    return entries
-
-
-def import_from_ris(input_file: str):
-    ris_data = read_ris(input_file)
-
-    # Two problems with how rispy outputs fields:
-    # - Authors is a list of strings. Must be one string
-    # - URLs is a list uf urls. But only one needed.
-    for i in ris_data:
-        i['authors'] = "; ".join(['authors'])
-        i['url'] = i['urls'][0]
 
     return ris_data
 
@@ -131,9 +118,9 @@ def import_studies(db_path: str, input_file: str):
     extension = file_path.suffix.lower()
 
     if extension == ".bib":
-        imported_data = import_from_bib(input_file)
+        imported_data = read_bib(input_file)
     elif extension == ".ris":
-        imported_data = import_from_ris(input_file)
+        imported_data = read_ris(input_file)
     else:
         raise ValueError(f"Unsupported file format '{extension}' \nOnly .bib and .ris files are supported")
 
