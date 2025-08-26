@@ -19,10 +19,11 @@ CREATE TABLE IF NOT EXISTS studies (
     FOREIGN KEY (file_id) REFERENCES input_files (file_id)
 );
 
-CREATE TABLE IF NOT EXISTS criteria (
-    criteria_id INTEGER PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS recipes (
+    recipe_id INTEGER PRIMARY KEY,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    text TEXT NOT NULL UNIQUE
+    model TEXT NOT NULL,
+    content TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS llm_calls (
@@ -47,7 +48,6 @@ CREATE TABLE IF NOT EXISTS screening_results (
     call_id INTEGER NOT NULL,
     verdict INTEGER NOT NULL CHECK (verdict IN (0, 1)),  -- 0: Reject, 1: Accept
     reason TEXT NOT NULL,
-    human_validated INTEGER NOT NULL DEFAULT 0 CHECK (human_validated IN (0, 1)), -- 0:Not validated, 1:Validated
     FOREIGN KEY (study_id) REFERENCES studies (study_id),
     FOREIGN KEY (criteria_id) REFERENCES criteria (criteria_id),
     FOREIGN KEY (call_id) REFERENCES llm_calls (call_id)

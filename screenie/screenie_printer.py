@@ -42,11 +42,9 @@ def print_studies_table(db_path: str, limit: int = 10):
 
         # Get studies with screening status
         query = """
-        SELECT s.study_id, s.title, s.authors, s.year,
-               sr.verdict, sr.human_validated
-        FROM studies s
-        LEFT JOIN screening_results sr ON s.study_id = sr.study_id
-        ORDER BY s.study_id
+        SELECT study_id, title, authors, year,
+        FROM studies
+        ORDER BY study_id
         LIMIT ?
         """
 
@@ -58,11 +56,9 @@ def print_studies_table(db_path: str, limit: int = 10):
         table.add_column("Title", max_width=40)
         table.add_column("Authors", max_width=20)
         table.add_column("Year")
-        table.add_column("LLM", justify="center")
-        table.add_column("Status", justify="center")
 
         for row in results:
-            study_id, title, authors, year, verdict, validated = row
+            study_id, title, authors, year = row
 
             # Truncate long titles
             display_title = title[:37] + "..." if len(title) > 40 else title
@@ -84,42 +80,6 @@ def print_studies_table(db_path: str, limit: int = 10):
                 display_title,
                 display_authors,
                 str(year),
-                llm_status,
-                status
             )
 
         console.print(table)
-
-
-def print_study(title, authors, abstract):
-    title_text = Text(title, style="bold underline")
-    authors_text = Text(authors, style="italic")
-    abstract_text = Text(abstract)
-    content = Padding(Text.assemble(authors_text, "\n\n", abstract_text), (1, 4))
-    panel = Panel(content, title=title_text, expand=False)
-    console.print(panel)
-
-
-def print_llm_suggestion(verdict: str, reason: str):
-    """
-    Prints the LLM verdict and reasoning in a panel with a simple 'Verdict/Reason' format.
-    """
-    # Combine verdict and reason in the panel content
-    if verdict == "1":
-        verdict_msg = "Relevant"
-        verdict_color = "bold green"
-    else:
-        verdict_msg = "Not relevant"
-        verdict_color= "bold red"
-
-    content = Text.assemble(
-        ("Verdict: ", "bold"),
-        (f"{verdict_msg}\n", verdict_color),
-        ("Reason: ", "bold"),
-        (reason, "")
-    )
-    
-    padded_content = Padding(content, (1, 2))
-    panel = Panel(padded_content, expand=False)
-    console.print(panel)
-

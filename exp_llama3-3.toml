@@ -5,19 +5,23 @@ temperature = 0
 max_tokens = 1500
 
 [prompt]
-persona = "You are an assistant of an ecology researcher that is conducting the initial screening of studies for a meta-analysis.\n"
-instruction = "Recommend inclusion or not of a scientific study and explain your decision.\n"
-context = "You will be given criteria for inclusion. The user will give you the study's title and abstract.\n"
+text = """
+You are an assistant of an ecology researcher that is conducting the initial screening of studies for a meta-analysis.
+Recommend inclusion or not of a scientific study and explain your decision.
+You will be given criteria for inclusion. The user will give you the study's title and abstract.
 
-data_format = """
-Create a valid JSON output. Follow this schema:
-{
-    "verdict": "{1 inclusion, 0 not}",
-    "reason": "{short explanation supporting the decision}"
-}
+Title:
+$title
+Authors:
+$authors
+Year:
+$year
+Abstract:
+$abstract
 """
 
 [criteria]
 text = """
-Include only studies that test how good are LLMs compared to humans for screening papers.
+1. Include only studies that test how good are LLMs compared to humans for screening papers.
+2. Include studies published after 2000"
 """

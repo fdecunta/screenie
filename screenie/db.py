@@ -133,14 +133,14 @@ def save_llm_call(db_path, prompt, response, criteria_id, study_id):
 
 # --- screening_results table
 
-def save_screening_result(db_path, criteria_id, study_id, call_id, verdict, reason, human_validated):
+def save_screening_result(db_path, criteria_id, study_id, call_id, verdict, reason):
     with sqlite3.connect(db_path) as con:
         cur = con.cursor()
         cur.execute("""
         INSERT INTO screening_results
-        (criteria_id, study_id, call_id, verdict, reason, human_validated)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """, (criteria_id, study_id, call_id, verdict, reason, human_validated)
+        (criteria_id, study_id, call_id, verdict, reason)
+        VALUES (?, ?, ?, ?, ?)
+        """, (criteria_id, study_id, call_id, verdict, reason)
         )
 
         return cur.lastrowid
@@ -161,7 +161,6 @@ def export_screening_results(db_path: str, output_format: str, output_file: str)
         st.doi,
         r.verdict,
         r.reason,
-        r.human_validated
     FROM studies AS st
     LEFT JOIN screening_results AS r
     ON st.study_id = r.study_id

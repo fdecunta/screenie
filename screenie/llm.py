@@ -50,13 +50,13 @@ def extract_json_block(text: str) -> str:
         raise ValueError("No JSON block found")
 
     json_str = match.group(1).strip()
-    return json.loads(json_str)
+    return json_str
 
 
 def parse_llm_response(response):
     """Parse response from LLM"""
     json_output = extract_json_block(response.choices[0].message.content)
-    parsed_output = LLMResponse(verdict=int(json_output['verdict']), reason=json_output['reason'])
+    parsed_output = LLMResponse.model_validate_json(json_output)
 
     return parsed_output
 
@@ -99,7 +99,6 @@ def make_suggestion(title: str, abstract: int, criteria: str):
             study_id = study_id,
             call_id = call_id,
             verdict = llm_output.verdict,
-            reason = llm_output.reason,
-            human_validated = 0
+            reason = llm_output.reason
     )
 

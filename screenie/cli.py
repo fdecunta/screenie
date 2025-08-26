@@ -17,6 +17,7 @@ import screenie.config as config
 import screenie.db as db
 import screenie.llm as llm
 import screenie.reader as reader
+import screenie.recipes as recipes
 from screenie.screenie_printer import print_project_dashboard, print_studies_table
 
 
@@ -28,14 +29,12 @@ def validate_db_file(ctx, param, value):
     return value
 
 
-# CLI group definition
 @click.group()
 def cli():
     """LLM-assisted systematic review screening tool"""
     pass
 
 
-# Commands
 @cli.command(name="init")
 @click.argument("name")
 def init(name):
@@ -53,7 +52,6 @@ def init(name):
         sys.exit(1)
     else:
         click.secho(f"Initialized {db_name}", fg="green")
-
 
 
 @cli.command(name="config")
@@ -107,56 +105,16 @@ def import_file(input_file, database):
         click.secho(f"Database error: {e}", err=True, fg="red")
         
 
-
-
-@cli.command(name="criteria")
+@cli.command(name="recipe")
 @click.argument(
-    "database",
+    "file",
     type=click.Path(exists=True, file_okay=True, dir_okay=False),
-    callback=validate_db_file,
 )
-def edit_inclusion_criteria(database: str) -> None:
-    """
-    Open an editor for defining or updating inclusion criteria.
-
-    Existing criteria are preloaded if available. Lines starting with
-    '#' are ignored and serve only as instructions or examples.
-    """
-    INSTRUCTIONS = """\
-# Lines starting with '#' are ignored.
-# Write your inclusion criteria below.
-# Example:
-# 1. The study includes experimental data on LLMs for ecology.
-# 2. The study compares LLMs with human performance.
-"""
-
-    last_text = db.read_last_criteria(db_path=database)
-    buffer = f"{INSTRUCTIONS}\n{last_text or ''}"
-
-    new_text = click.edit(buffer)
-    if new_text is None:
-        click.echo("No changes made.")
-        return
-
-    # Strip instruction lines
-    criteria = "\n".join(
-        line for line in new_text.splitlines() if not line.strip().startswith("#")
-    ).strip()
-
-    if not criteria:
-        click.echo("No criteria provided.")
-        return
-
-    try:
-        saved_criteria = db.save_criteria(db_path=database, text=criteria)
-    except Exception as e:
-        click.echo(f"Failed to save criteria: {e}")
-
-    if saved_criteria is None:
-        click.echo("The same criteria already exists. No changes made.")
-        return
-
-    click.secho("Criteria saved successfully.", fg="green")
+def create_recipe(file):
+    """Read and store a recipe from a TOML file"""
+    recipe = recipes.read_recipe(file)
+    print(recipe)
+#    db.save_recipe(recipe)
 
 
 @cli.command(name="screen")
@@ -206,11 +164,8 @@ def screen_studies(database, batch_size):
                 study_id = study_id,
                 call_id = call_id,
                 verdict = llm_output.verdict,
-                reason = llm_output.reason,
-                human_validated = 0
+                reason = llm_output.reason
         )
-
-
 
 
 @cli.command(name="status")
