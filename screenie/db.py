@@ -47,11 +47,11 @@ def insert_studies(db_path, file_id, studies_list):
         """, [(i.title, i.authors, i.year, i.abstract, i.journal, i.url, i.doi, file_id) for i in studies_list])
 
 
-def fetch_study(db_path, study_id) -> tuple[int, str, str]:
+def fetch_study(db_path, study_id) -> tuple[str, str]:
     with sqlite3.connect(db_path) as con:
         cur = con.cursor()
         study = cur.execute("""
-        SELECT study_id, title, abstract
+        SELECT title, abstract
         FROM studies
         WHERE study_id = ?
         """, (study_id,)
@@ -177,19 +177,6 @@ def export_screening_results(db_path: str, output_format: str, output_file: str)
         df.to_excel(output_file, index=False, engine="openpyxl")
     else:
         raise ValueError(f"Unsupported format: {output_format}")
-
-
-def has_screening_result(db_path: str, study_id: int) -> bool:
-    """Check if a study has a screening result stored in the database"""
-
-    query = "SELECT verdict FROM screening_results WHERE study_id = ?"
-    with sqlite3.connect(db_path) as con:
-        verdict = con.execute(query, (study_id,)).fetchone()
-
-    if verdict is not None:
-        return True
-    else:
-        return False
 
 
 def fetch_pending_studies_ids(db_path: str, batch_size: int) -> list[int]:

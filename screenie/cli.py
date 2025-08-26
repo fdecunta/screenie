@@ -179,7 +179,38 @@ def screen_studies(database, batch_size):
         click.echo(f"Note: Only {len(studies_ids)} studies pending (requested {batch_size})")
 
     for study_id in studies_ids:
-        llm.get_suggestion(database, study_id)
+        title, abstract = db.fetch_study(db_path=db_path, study_id=study_id)
+
+        criteria_id, criteria = db.fetch_criteria(db_path=db_path) 
+
+        click.echo(f"Title: {title}")
+        click.echo(f"Abstract: {abstract}")
+
+        #llm.make_suggestion(paper_id, criteria_id, prompt_id, model_id)
+        llm_output, full_response, system_prompt = llm.make_suggestion(title, abstract, criteria)
+
+
+        call_id = db.save_llm_call(
+                db_path = db_path,
+                prompt = system_prompt,
+                response = response,
+                criteria_id = criteria_id,
+                study_id = study_id
+        )
+    
+    
+        # Save screening_result
+        suggestion_id = db.save_screening_result(
+                db_path = db_path,
+                criteria_id = criteria_id,
+                study_id = study_id,
+                call_id = call_id,
+                verdict = llm_output.verdict,
+                reason = llm_output.reason,
+                human_validated = 0
+        )
+
+
 
 
 @cli.command(name="status")

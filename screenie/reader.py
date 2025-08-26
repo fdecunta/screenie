@@ -9,8 +9,6 @@ import click
 from pydantic import BaseModel
 import rispy
 
-import screenie.db as db
-
 
 class Paper(BaseModel):
     """Paper schema matching the database table structure"""
