@@ -53,14 +53,17 @@ Abstract: $abstract
 ## Quick Start
 
 ```bash
+# Store your API keys
+screenie config
+
 # Initialize a new project
 screenie init my-review
 
 # Import papers
 screenie import --from papers.bib --to my-review.db
 
-# Create a recipe file (my-recipe.toml) - see example above
-# Then run screening
+# Create a recipe file (my-recipe.toml)
+# Then screen 10 studies
 screenie run my-recipe.toml my-review.db --limit 10
 
 # Export results
