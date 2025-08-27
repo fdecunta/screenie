@@ -46,8 +46,19 @@ class Database():
         cur.execute(query, (f.name, f.read_bytes()))
     
         return cur.lastrowid
+
+
+    def fetch_file_id(self, input_file: str) -> int:
+        """Get file_id based on content"""
+        f = Path(input_file)
+
+        query = "SELECT file_id FROM files WHERE content = ? "
+        cur = self.con.cursor()
+        file_id = cur.execute(query, (f.read_bytes(),)).fetchone()[0]
     
-    
+        return file_id
+
+       
     def save_studies(self, file_id, studies_list):
         query = """ 
         insert into studies 
@@ -82,9 +93,17 @@ class Database():
         cur = self.con.cursor()
         cur.execute(query, (recipe.model_dump_json(), file_id))
 
-        return  cur.lastrowid
-    
-    
+        return cur.lastrowid
+
+
+    def fetch_recipe_id(self, recipe) -> int:
+        query = "SELECT recipe_id FROM recipes WHERE content = ?"
+        cur = self.con.cursor()
+        recipe_id = cur.execute(query, (recipe.model_dump_json(),)).fetchone()[0]
+
+        return recipe_id
+
+   
     def save_llm_call(self, study_id, recipe_id, response):
         response_data = response.json()
         

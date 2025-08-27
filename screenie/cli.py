@@ -164,27 +164,33 @@ def screen_studies(recipe, database , limit, dry_run):
     # This may fail because the user put a wrong model name
     # or add the keys to the config file
     # TODO: exceptions here
-    config.load_model_keys(run_recipe.model.model)
+    try:
+        config.load_model_keys(run_recipe.model.model)
+    except ValueError as e:
+        click.secho(e, err=True, fg="red")
+        click.echo("Edit configuration running: \n\tscreenie config")
+        sys.exit(1)
         
 
     # 2. Check if recipe was already used. 
     # This is done just trying to store it into the database.
     # 
-    # 2.1 If the BLOB already exists:
-    #   If True, query not screned studies by this recipe ID
-    #   If False, just get some papers
-    #
-    # 2.2 If the NAME already exists:
-    #   If True, raise a warning and ask for the user to solve this:
-    #   - save this recipe as a new version and start again?
-    #   - abort?
-    file_id = project_db.save_file(recipe)
+    # - Check if there is a file with same content but different name.
+    # - Check if there is a file with same name but 
+    # 
+    # TODO: don't try to save the recipe all the times.
+    # must use some "create if not exists" for recipes
+    try:
+        file_id = project_db.save_file(recipe)
+    except:
+        file_id = project_db.fetch_file_id(recipe)
+
 
     try:
         recipe_id = project_db.save_recipe(run_recipe, file_id)
     except sqlite3.IntegrityError as e:
-        click.secho("Error: Recipe already exists in the database.", err=True, fg="red")
-        sys.exit(1)
+        recipe_id = project_db.fetch_recipe_id(run_recipe)
+        click.secho("Recipe already exists in the database.", err=True, fg="yellow")
 
 
     # 3. Fetch studies ids
@@ -197,26 +203,25 @@ def screen_studies(recipe, database , limit, dry_run):
     if len(studies_ids) < limit:
         click.echo(f"Note: Only {len(studies_ids)} studies pending (requested {limit})")
 
+    # 4. Analyze each study
     for study_id in studies_ids:
         study = project_db.fetch_study(study_id)
 
+        # TODO: Add option to retry a few times or just skip. This can be at this stage or during parsing, which is prone to error
         try:
             response = llm.call_llm(run_recipe, study)
         except Exception as e:
             click.echo(f"Error calling llm: {e}", err=True)
             sys.exit(1)
 
-        llm_output = llm.parse_llm_response(response)
-        print(llm_output)
-        exit()
-
+        llm_output = llm.parse_response(response)
 
         call_id = project_db.save_llm_call(
                 response = response,
                 recipe_id = recipe_id,
                 study_id = study_id
         )
-        suggestion_id = project_db.save_screening_result(
+        suggestion_id = project_db.save_result(
                 recipe_id = recipe_id,
                 study_id = study_id,
                 call_id = call_id,
@@ -225,6 +230,11 @@ def screen_studies(recipe, database , limit, dry_run):
         )
         # Commit at this stage. If things worked, start saving results
         project_db.commit()
+
+        # TODO: mejorar mensajes
+        click.echo(f"Study: {study['title']}\n")
+        click.echo(f"Verdict: {llm_output['verdict']}")
+        click.echo(f"Reason: {llm_output['reason']}\n")
 
     # Close before end
     project_db.close()

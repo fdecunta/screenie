@@ -16,21 +16,19 @@ def create_config_file(config_file):
 #
 # Example: If your recipe calls "openai/gpt-4o", you need a section [openai/gpt-4o]
 # below with a valid OPENAI_API_KEY.
+#
+# Some examples (note that API keys are placeholders):
 
 ["openai/gpt-4o"]
-# Replace with your OpenAI API key.
 OPENAI_API_KEY = "your-api-key"
 
 ["anthropic/claude-opus-4-20250514"]
-# Replace with your Anthropic API key.
 ANTHROPIC_API_KEY = "your-api-key"
 
 ["gradient_ai/llama3.3-70b-instruct"]
-# Replace with your Gradient AI key.
 GRADIENT_AI_API_KEY = "your-api-key"
 
 ["xai/grok-3-mini-beta"]
-# Replace with your xAI key.
 XAI_API_KEY = "your-api-key"
 """
 
@@ -82,6 +80,9 @@ def load_model_keys(model: str):
         
     if not config:
         raise ValueError("No configuration file found")
+
+    if model not in config.keys():
+        raise ValueError(f"No configuration for model: {model}")
     
     for key, value in config[model].items():
         os.environ[key] = value
