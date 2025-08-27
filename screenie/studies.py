@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 import sys
 from typing import Optional, List
@@ -10,8 +9,8 @@ from pydantic import BaseModel
 import rispy
 
 
-class Paper(BaseModel):
-    """Paper schema matching the database table structure"""
+class Study(BaseModel):
+    """Study schema matching the database table structure"""
     title: str
     authors: str
     year: int
@@ -30,7 +29,7 @@ def clean_strings(entry: dict) -> None:
 
 
 def normalize_field_name(raw_name: str) -> str:
-    """Convert field name to the expected name by Paper class"""
+    """Convert field name to the expected name by Study class"""
     field_mappings = {
         'authors': ['author', 'authors', 'first_authors'],
         'title': ['title', 'article_title', 'primary_title'],
@@ -59,7 +58,7 @@ def normalize_entry(entry: dict) -> dict:
     return normalized_entry
 
 
-def validate_studies(studies: List[dict]) -> List[Paper]:
+def validate_studies(studies: List[dict]) -> List[Study]:
     valid_studies = []
     errors = []
 
@@ -68,7 +67,7 @@ def validate_studies(studies: List[dict]) -> List[Paper]:
     for i, study_data in enumerate(studies):
         try:
             normalized_study = normalize_entry(study_data)
-            study = Paper(**normalized_study)
+            study = Study(**normalized_study)
             valid_studies.append(study)
         except Exception as e:
             click.echo(f"{e}")
@@ -104,7 +103,7 @@ def read_ris(input_file: str):
     return ris_data
 
 
-def import_studies(input_file: str):
+def import_studies(input_file: str) -> List[Study]:
     """Import bibliography data from a file into the database.
  
     Automatically detects the file format based on extension and uses

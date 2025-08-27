@@ -8,23 +8,30 @@ A command-line interface for managing research study screening databases.
 import os
 from pathlib import Path
 import platform
+import sqlite3
 import subprocess
 import sys
 
 import click
 
 import screenie.config as config
-import screenie.db as db
+from screenie.db import Database
 import screenie.llm as llm
-import screenie.reader as reader
+import screenie.studies as studies
 import screenie.recipes as recipes
-from screenie.screenie_printer import print_project_dashboard, print_studies_table
 
 
 # Helper functions
 def validate_db_file(ctx, param, value):
     """Validate that the database file has .db extension."""
     if not value.lower().endswith(".db"):
+        raise click.BadParameter("File must have .db extension")
+    return value
+
+
+def validate_toml_file(ctx, param, value):
+    """Validate that the database file has .db extension."""
+    if not value.lower().endswith(".toml"):
         raise click.BadParameter("File must have .db extension")
     return value
 
@@ -46,7 +53,8 @@ def init(name):
         sys.exit(1)
     
     try:
-        db.init_db(db_name)
+        project_db = Database(db_name)
+        project_db.init()
     except Exception as e:
         click.secho(f"Error: failed to initialize database '{db_name}': {e}", err=True, fg="red")
         sys.exit(1)
@@ -76,7 +84,7 @@ def config_edit():
 @click.option(
    "--to",
    "database",
-   type=click.Path(file_okay=True, dir_okay=False),
+   type=click.Path(exists=True, file_okay=True, dir_okay=False),
    callback=validate_db_file,
    required=True,
    help="Database file to import to"
@@ -84,7 +92,7 @@ def config_edit():
 def import_file(input_file, database):
     """Import studies from bibliography file to database."""
     try:
-        studies_list, errors = reader.import_studies(input_file=input_file)
+        studies_list, errors = studies.import_studies(input_file=input_file)
     except ValueError as e:
         click.secho(f"Error: {e}", err=True, fg="red")
         return
@@ -98,98 +106,120 @@ def import_file(input_file, database):
         return
     
     try:
-        file_id = db.insert_file(db_path=database, input_file=input_file)
-        imported_count = db.insert_studies(db_path=database, file_id=file_id, studies_list=studies_list)
-        click.secho(f"Done!")
+        project_db = Database(database)
+        file_id = project_db.save_file(input_file)
+        imported_count = project_db.save_studies(file_id=file_id, studies_list=studies_list)
+        project_db.commit()
+        project_db.close()
     except Exception as e:
         click.secho(f"Database error: {e}", err=True, fg="red")
+        sys.exit(1)
         
+    click.secho(f"Done.")
 
-@cli.command(name="recipe")
+
+@cli.command(name="run")
 @click.argument(
-    "file",
+    "recipe",
     type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    required=True,
+    callback=validate_toml_file
 )
-def create_recipe(file):
-    """Read and store a recipe from a TOML file"""
-    recipe = recipes.read_recipe(file)
-    print(recipe)
-#    db.save_recipe(recipe)
-
-
-@cli.command(name="screen")
 @click.argument(
     "database",
     type=click.Path(exists=True, file_okay=True, dir_okay=False),
-    callback=validate_db_file,
+    required=True,
+    callback=validate_db_file
 )
-@click.option("--batch-size", default=1, type=click.IntRange(min=1))
-def screen_studies(database, batch_size):
+@click.option(
+        "--limit",
+        "-l",
+        default=1,
+        type=click.IntRange(min=1),
+        help="Maximum number of studies to process in this run." 
+)
+@click.option(
+        "--dry-run",
+        "-d",
+        is_flag=True,
+        help="Simulate the run without calling the LLM or saving results."
+)
+def screen_studies(recipe, database , limit, dry_run):
     """Screen studies using LLM assistance."""
 
-    studies_ids = db.fetch_pending_studies_ids(database, batch_size)
+    project_db = Database(database)
+
+    # TODO implement dry-run
+    if dry_run:
+        print("haha dry run")
+        sys.exit(1)
+
+    # 1. Check that the recipe is good
+    #
+    # TODO: Good error messages explainig what's wrong
+    #
+    run_recipe = recipes.read_recipe(recipe)
+
+    # 2. Check if recipe was already used. 
+    # This is done just trying to store it into the database.
+    # 
+    # 2.1 If the BLOB already exists:
+    #   If True, query not screned studies by this recipe ID
+    #   If False, just get some papers
+    #
+    # 2.2 If the NAME already exists:
+    #   If True, raise a warning and ask for the user to solve this:
+    #   - save this recipe as a new version and start again?
+    #   - abort?
+    file_id = project_db.save_file(recipe)
+
+    try:
+        recipe_id = project_db.save_recipe(run_recipe, file_id)
+    except sqlite3.IntegrityError as e:
+        click.secho("Error: Recipe already exists in the database.", err=True, fg="red")
+        sys.exit(1)
+
+
+    # 3. Fetch studies ids
+    studies_ids = project_db.fetch_pending_studies_ids(recipe_id, limit)
 
     if len(studies_ids) == 0:
         click.echo("All studies have been screened. No pending studies found.")
         return
 
-    if len(studies_ids) < batch_size:
-        click.echo(f"Note: Only {len(studies_ids)} studies pending (requested {batch_size})")
+    if len(studies_ids) < limit:
+        click.echo(f"Note: Only {len(studies_ids)} studies pending (requested {limit})")
 
     for study_id in studies_ids:
-        title, abstract = db.fetch_study(db_path=db_path, study_id=study_id)
+        study = project_db.fetch_study(study_id)
 
-        criteria_id, criteria = db.fetch_criteria(db_path=db_path) 
+        exit()
+        # TODO from here
 
-        click.echo(f"Title: {title}")
-        click.echo(f"Abstract: {abstract}")
-
-        #llm.make_suggestion(paper_id, criteria_id, prompt_id, model_id)
-        llm_output, full_response, system_prompt = llm.make_suggestion(title, abstract, criteria)
+        #run_recipe.substitute(study)
 
 
-        call_id = db.save_llm_call(
-                db_path = db_path,
-                prompt = system_prompt,
+        response = llm.call_llm(system_prompt, msg)
+        llm_output = parse_llm_response(response)
+
+        call_id = project_db.save_llm_call(
                 response = response,
-                criteria_id = criteria_id,
+                recipe_id = recipe_id,
                 study_id = study_id
         )
-    
-    
-        # Save screening_result
-        suggestion_id = db.save_screening_result(
-                db_path = db_path,
-                criteria_id = criteria_id,
+        suggestion_id = project_db.save_screening_result(
+                recipe_id = recipe_id,
                 study_id = study_id,
                 call_id = call_id,
                 verdict = llm_output.verdict,
                 reason = llm_output.reason
         )
+        # Commit at every run
+        project_db.commit()
 
-
-@cli.command(name="status")
-@click.argument(
-    "database",
-    type=click.Path(exists=True, file_okay=True, dir_okay=False),
-    callback=validate_db_file,
-)
-def show_status(database):
-    """Show project overview and statistics."""
-    print_project_dashboard(database)
-
-
-@cli.command(name="list")
-@click.argument(
-    "database", 
-    type=click.Path(exists=True, file_okay=True, dir_okay=False),
-    callback=validate_db_file,
-)
-@click.option("--limit", default=20, help="Number of studies to show")
-def list_studies(database, limit):
-    """List studies in table format."""
-    print_studies_table(database, limit)
-
+    # Close before end
+    project_db.close()
+    return
 
 
 @cli.command(name="export")
@@ -219,7 +249,7 @@ def export(db_path, output_format, output_file):
 
     # TODO: Ask to overwrite if file exists
 
-    db.export_screening_results(db_path, output_format, output_file)
+    db.export_results(db_path, output_format, output_file)
     click.echo(f"Exported results to {output_file} ({output_format})")
 
 

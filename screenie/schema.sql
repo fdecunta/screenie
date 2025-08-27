@@ -1,8 +1,16 @@
-CREATE TABLE IF NOT EXISTS input_files (
+CREATE TABLE IF NOT EXISTS files (
     file_id INTEGER PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
     content BLOB NOT NULL UNIQUE,  
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS recipes (
+    recipe_id INTEGER PRIMARY KEY,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    content TEXT NOT NULL UNIQUE,
+    file_id INTEGER NOT NULL,  
+    FOREIGN KEY (file_id) REFERENCES files (file_id)
 );
 
 CREATE TABLE IF NOT EXISTS studies (
@@ -16,39 +24,30 @@ CREATE TABLE IF NOT EXISTS studies (
     url TEXT NOT NULL UNIQUE,
     doi TEXT UNIQUE,
     file_id INTEGER NOT NULL,  
-    FOREIGN KEY (file_id) REFERENCES input_files (file_id)
-);
-
-CREATE TABLE IF NOT EXISTS recipes (
-    recipe_id INTEGER PRIMARY KEY,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    model TEXT NOT NULL,
-    content TEXT NOT NULL UNIQUE
+    FOREIGN KEY (file_id) REFERENCES files (file_id)
 );
 
 CREATE TABLE IF NOT EXISTS llm_calls (
     call_id INTEGER PRIMARY KEY,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    model TEXT NOT NULL,
-    prompt TEXT NOT NULL,
     input_tokens INTEGER NOT NULL,
     output_tokens INTEGER NOT NULL,
-    criteria_id INTEGER NOT NULL,
+    recipe_id INTEGER NOT NULL,
     study_id INTEGER NOT NULL,
     full_response TEXT NOT NULL,
-    FOREIGN KEY (criteria_id) REFERENCES criteria (criteria_id),
+    FOREIGN KEY (recipe_id) REFERENCES recipes (recipe_id),
     FOREIGN KEY (study_id) REFERENCES studies (study_id)
 );
 
-CREATE TABLE IF NOT EXISTS screening_results (
+CREATE TABLE IF NOT EXISTS results (
     suggestion_id INTEGER PRIMARY KEY,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    criteria_id INTEGER NOT NULL,
+    recipe_id INTEGER NOT NULL,
     study_id INTEGER NOT NULL,
     call_id INTEGER NOT NULL,
     verdict INTEGER NOT NULL CHECK (verdict IN (0, 1)),  -- 0: Reject, 1: Accept
     reason TEXT NOT NULL,
+    FOREIGN KEY (recipe_id) REFERENCES recipes (recipe_id),
     FOREIGN KEY (study_id) REFERENCES studies (study_id),
-    FOREIGN KEY (criteria_id) REFERENCES criteria (criteria_id),
     FOREIGN KEY (call_id) REFERENCES llm_calls (call_id)
 );
