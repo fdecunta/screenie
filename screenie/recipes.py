@@ -1,28 +1,20 @@
 from string import Template
+from typing import Optional, Union
 import tomllib
 
-from pydantic import (
-        BaseModel,
-        ConfigDict,
-        confloat,
-        PositiveInt
-)
-
-
-data_format = """
-Create a valid JSON output. Follow this schema:
-{
-    "verdict": "{1 inclusion, 0 not}",
-    "reason": "{short explanation supporting the decision}"
-}
-"""
-
+from pydantic import BaseModel
 
 class Model(BaseModel):
-    provider: str | None
     model: str
-    temperature: confloat(ge=0, lt=2) = 0    # temp defaults to 0 to reduce randomness
-    max_tokens: PositiveInt = 4096    # defaults to a razonable big number
+    timeout: Optional[Union[float, int]] = None
+    temperature: Optional[float] = None
+    top_p: Optional[float] = None
+    n: Optional[int] = None
+    max_tokens: Optional[int] = None
+    seed: Optional[int] = None
+    deployment_id: Optional[str] = None
+    base_url: Optional[str] = None
+    api_version: Optional[str] = None
 
 
 class Prompt(BaseModel):
@@ -37,11 +29,6 @@ class Recipe(BaseModel):
     model: Model
     prompt: Prompt
     criteria: Criteria
-
-    def substitute(self, study):
-        prompt_template = Template(self.prompt.text)
-        return prompt_template.substitute(study)
-
 
 
 def read_recipe(file: str):

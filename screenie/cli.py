@@ -160,6 +160,13 @@ def screen_studies(recipe, database , limit, dry_run):
     #
     run_recipe = recipes.read_recipe(recipe)
 
+    # Set model keys as env variables
+    # This may fail because the user put a wrong model name
+    # or add the keys to the config file
+    # TODO: exceptions here
+    config.load_model_keys(run_recipe.model.model)
+        
+
     # 2. Check if recipe was already used. 
     # This is done just trying to store it into the database.
     # 
@@ -193,14 +200,16 @@ def screen_studies(recipe, database , limit, dry_run):
     for study_id in studies_ids:
         study = project_db.fetch_study(study_id)
 
+        try:
+            response = llm.call_llm(run_recipe, study)
+        except Exception as e:
+            click.echo(f"Error calling llm: {e}", err=True)
+            sys.exit(1)
+
+        llm_output = llm.parse_llm_response(response)
+        print(llm_output)
         exit()
-        # TODO from here
 
-        #run_recipe.substitute(study)
-
-
-        response = llm.call_llm(system_prompt, msg)
-        llm_output = parse_llm_response(response)
 
         call_id = project_db.save_llm_call(
                 response = response,
@@ -211,10 +220,10 @@ def screen_studies(recipe, database , limit, dry_run):
                 recipe_id = recipe_id,
                 study_id = study_id,
                 call_id = call_id,
-                verdict = llm_output.verdict,
-                reason = llm_output.reason
+                verdict = llm_output['verdict'],
+                reason = llm_output['reason']
         )
-        # Commit at every run
+        # Commit at this stage. If things worked, start saving results
         project_db.commit()
 
     # Close before end

@@ -1,11 +1,12 @@
 import json
 import re
+from string import Template
 from typing import Literal
 
 import litellm
 from pydantic import BaseModel
 
-from screenie.config import get_model_config
+
 
 
 class LLMResponse(BaseModel):
@@ -14,25 +15,38 @@ class LLMResponse(BaseModel):
     reason: str
 
 
-class LLM():
-    def __init__(self, recipe):
-        
+def compile_prompt(recipe, study):
+    """
+    Compile a prompt for a study using a recipe.
+    - Inserts study fields and criteria into the template.
+    - Appends JSON output instructions.
+    """
+
+    # Merge study info with criteria
+    context = {**study, "criteria": recipe.criteria.text}
+
+    prompt_template = Template(recipe.prompt.text)
+    filled_prompt = prompt_template.substitute(context)
+
+    data_format = """\nCreate a valid JSON output. Follow this schema:
+{
+    "verdict": "{1 inclusion, 0 not}",
+    "reason": "{explanation supporting the decision}"
+}
+"""
+
+    return filled_prompt + data_format
 
 
-def call_llm(system_prompt, msg):
-    usr_config = get_model_config()
- 
-    messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": msg},
-    ]
+def call_llm(recipe, study):
+    msg = compile_prompt(recipe, study)
+    usr_config = recipe.model.model_dump()
     
     response = litellm.completion(
-            model = usr_config['model'],
-            api_key = usr_config['api_key'],
-            messages = messages,
-            temperature = 0,    
+        messages = [{"role": "user", "content": msg}],
+        **usr_config  
     )
+
     return response
 
 
@@ -51,9 +65,9 @@ def extract_json_block(text: str) -> str:
     return json_str
 
 
-def parse_llm_response(response):
-    """Parse response from LLM"""
+def parse_response(response):
+    """Parse response from LLM and return it as dict"""
     json_output = extract_json_block(response.choices[0].message.content)
     parsed_output = LLMResponse.model_validate_json(json_output)
 
-    return parsed_output
+    return parsed_output.model_dump()
