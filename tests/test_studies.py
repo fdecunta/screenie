@@ -2,7 +2,7 @@ import tempfile
 import os
 import unittest
 
-from screenie.reader import (
+from screenie.studies import (
     clean_strings,
     normalize_field_name,
     normalize_entry,

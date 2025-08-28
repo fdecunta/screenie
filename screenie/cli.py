@@ -154,11 +154,13 @@ def screen_studies(recipe, database , limit, dry_run):
         print("haha dry run")
         sys.exit(1)
 
-    # 1. Check that the recipe is good
-    #
-    # TODO: Good error messages explainig what's wrong
-    #
-    run_recipe = recipes.read_recipe(recipe)
+    # Read recipe
+    try:
+        run_recipe = recipes.read_recipe(recipe)
+    except KeyError as keyerr:
+        click.secho(f"Error in the definition of recipe: {recipe}", err=True, fg="red")
+        click.echo(f"Missing field: {keyerr}")
+        sys.exit(1)
 
     # Set model keys as env variables
     # This may fail because the user put a wrong model name
@@ -270,6 +272,9 @@ def export(db_path, output_format, output_file):
 
     db.export_results(db_path, output_format, output_file)
     click.echo(f"Exported results to {output_file} ({output_format})")
+
+
+# TODO: commands to inspect the db
 
 
 # Entry point

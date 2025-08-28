@@ -17,23 +17,17 @@ class Model(BaseModel):
     api_version: Optional[str] = None
 
 
-class Prompt(BaseModel):
-    text: str
-
-
-class Criteria(BaseModel):
-    text: str
-
-
 class Recipe(BaseModel):
     model: Model
-    prompt: Prompt
-    criteria: Criteria
+    prompt: str
+    criteria: str
 
 
 def read_recipe(file: str):
     with open(file, "rb") as f:
         raw_recipe = tomllib.load(f)
 
-    return Recipe(**raw_recipe)
+    raw_recipe["prompt"] = raw_recipe["prompt"]["text"]
+    raw_recipe["criteria"] = raw_recipe["criteria"]["text"]
 
+    return Recipe(**raw_recipe)

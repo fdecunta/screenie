@@ -28,9 +28,9 @@ def compile_prompt(recipe, study):
     """
 
     # Merge study info with criteria
-    context = {**study, "criteria": recipe.criteria.text}
+    context = {**study, "criteria": recipe.criteria}
 
-    prompt_template = Template(recipe.prompt.text)
+    prompt_template = Template(recipe.prompt)
     filled_prompt = prompt_template.substitute(context)
 
     data_format = """\nCreate a valid JSON output. Follow this schema:
@@ -54,8 +54,7 @@ def call_llm(recipe, study):
         **usr_config  
     )
 
-    return response
-
+    return response.model_dump()
 
 
 def extract_json(text: str) -> str:
@@ -63,37 +62,20 @@ def extract_json(text: str) -> str:
     Extract the content of the first {...} JSON object in a string.
     Returns the JSON string inside the braces, or raises ValueError if not found.
     """
-
-    pattern = r"\{([\s\S]*?)\}"
+    pattern = r"\{[^{}]*\}"
     match = re.search(pattern, text)
     
     if not match:
         raise ValueError("No JSON object found")
     
-    # Dedent in case the LLM indented the content
-    json_str = textwrap.dedent(match.group(0)).strip()  # include the braces
-    return json_str
-
-
-
-#def extract_json(text: str) -> str:
-#    """
-#    Extract the content of the first ```json ... ``` block in a string.
-#    Returns the JSON string inside the block.
-#    """
-#    pattern = r"```json\s*([\s\S]*?)```"
-#    match = re.search(pattern, text)
-#
-#    if not match:
-#        raise ValueError("No JSON block found")
-#
-#    json_str = match.group(1).strip()
-#    return json_str
+    # Parse and de-parse to ensure is a valida JSON
+    json_str = json.loads(match.group(0))
+    return json.dumps(json_str)
 
 
 def parse_response(response):
     """Parse response from LLM and return it as dict"""
-    json_output = extract_json(response.choices[0].message.content)
+    json_output = extract_json(response['choices'][0]['message']['content'])
     parsed_output = LLMResponse.model_validate_json(json_output)
 
     return parsed_output.model_dump()

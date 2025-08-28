@@ -62,8 +62,7 @@ def validate_studies(studies: List[dict]) -> List[Study]:
     valid_studies = []
     errors = []
 
-    # TODO: Write useful messages about what fails.
-    # Also, what to do when an entry fails? How to retry?
+    # TODO: Write useful messages about what fails. Also, what to do when an entry fails? How to retry?
 
     for i, study_data in enumerate(studies):
         try:

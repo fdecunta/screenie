@@ -1,5 +1,5 @@
 - TESTS!!!!
-- Change the whole thing: use 'recipes', .toml files with all the information, model, model temp, prompt, criteria, everything.
+- Add logs
 - Pass db_path as env
 - Improve SQL work. Don't close transactions early. For example, reading a file may fail but the file was already stored. This is a bug.
 - Tokens: inspect use, restrict calls and use, etc.

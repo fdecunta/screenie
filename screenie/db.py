@@ -105,12 +105,10 @@ class Database():
 
    
     def save_llm_call(self, study_id, recipe_id, response):
-        response_data = response.json()
-        
-        model = response_data['model']
-        input_tokens = response_data['usage']['prompt_tokens']
-        output_tokens = response_data['usage']['completion_tokens']
-        full_response = json.dumps(response_data)
+        model = response['model']
+        input_tokens = response['usage']['prompt_tokens']
+        output_tokens = response['usage']['completion_tokens']
+        full_response = json.dumps(response)
     
         query = """
         INSERT INTO llm_calls
