@@ -36,6 +36,94 @@ def validate_toml_file(ctx, param, value):
     return value
 
 
+def _read_recipe(recipe):
+    try:
+        run_recipe = recipes.read_recipe(recipe)
+    except KeyError as keyerr:
+        click.secho(f"Error in the definition of recipe: {recipe}", err=True, fg="red")
+        click.echo(f"Missing field: {keyerr}")
+        sys.exit(1)
+
+    return run_recipe
+
+
+def _register_recipe(project_db, recipe, run_recipe):
+    file_id = project_db.fetch_file_id(recipe)
+    recipe_id = project_db.fetch_recipe_id(run_recipe)
+
+    if not file_id and project_db.is_filename_used(recipe):
+        click.secho(
+            "Error: A recipe with the same filename already exists in the database, "
+            "but its contents are different. Please use a unique filename or update the existing recipe.",
+            err=True,
+            fg="red"
+        )
+        sys.exit(1)
+    elif not file_id:
+        file_id = project_db.save_file(recipe)
+        recipe_id = project_db.save_recipe(run_recipe, file_id)
+
+    return file_id, recipe_id
+
+
+def _set_env_model_keys(run_recipe):
+    # TODO: This may fail because the user put a wrong model name or something else. Check using litellm.models_list()
+    try:
+        config.load_model_keys(run_recipe.model.model)
+    except ValueError as e:
+        click.secho(e, err=True, fg="red")
+        click.echo("Edit configuration running: \n\tscreenie config")
+        sys.exit(1)
+
+
+
+def _fetch_pending_studies(project_db, recipe_id, limit):
+    studies_ids = project_db.fetch_pending_studies_ids(recipe_id, limit)
+
+    if len(studies_ids) == 0:
+        click.echo("All studies have been screened. No pending studies found.")
+        sys.exit(0)
+
+    if len(studies_ids) < limit:
+        click.echo(f"Note: Only {len(studies_ids)} studies pending (requested {limit})")
+
+    return studies_ids
+
+
+def _screen_study(project_db, run_recipe, recipe_id, study_id):
+    study = project_db.fetch_study(study_id)
+
+    # TODO: Add option to retry a few times or just skip. This can be at this stage or during parsing, which is prone to error
+    try:
+        response = llm.call_llm(run_recipe, study)
+    except Exception as e:
+        click.echo(f"Error calling llm: {e}", err=True)
+        sys.exit(1)
+
+    llm_output = llm.parse_response(response)
+
+    call_id = project_db.save_llm_call(
+            response = response,
+            recipe_id = recipe_id,
+            study_id = study_id
+    )
+    suggestion_id = project_db.save_result(
+            recipe_id = recipe_id,
+            study_id = study_id,
+            call_id = call_id,
+            verdict = llm_output['verdict'],
+            reason = llm_output['reason']
+    )
+    # Commit at this stage. If things worked, start saving results
+    project_db.commit()
+
+    # TODO: mejorar mensajes
+    click.echo(f"Study: {study['title']}\n")
+    click.echo(f"Verdict: {llm_output['verdict']}")
+    click.echo(f"Reason: {llm_output['reason']}\n")
+
+
+
 @click.group()
 def cli():
     """LLM-assisted systematic review screening tool"""
@@ -154,89 +242,17 @@ def screen_studies(recipe, database , limit, dry_run):
         print("haha dry run")
         sys.exit(1)
 
-    # Read recipe
-    try:
-        run_recipe = recipes.read_recipe(recipe)
-    except KeyError as keyerr:
-        click.secho(f"Error in the definition of recipe: {recipe}", err=True, fg="red")
-        click.echo(f"Missing field: {keyerr}")
-        sys.exit(1)
+    # Read recipe from file. Then register it in the database.
+    # If already exists, get its IDs
+    run_recipe = _read_recipe(recipe)
+    file_id, recipe_id = _register_recipe(project_db, recipe, run_recipe)
 
-    # Set model keys as env variables
-    # This may fail because the user put a wrong model name
-    # or add the keys to the config file
-    # TODO: exceptions here
-    try:
-        config.load_model_keys(run_recipe.model.model)
-    except ValueError as e:
-        click.secho(e, err=True, fg="red")
-        click.echo("Edit configuration running: \n\tscreenie config")
-        sys.exit(1)
-        
+    # With model from recipe, set model keys as env variables
+    _set_env_model_keys(run_recipe)        
 
-    # 2. Check if recipe was already used. 
-    # This is done just trying to store it into the database.
-    # 
-    # - Check if there is a file with same content but different name.
-    # - Check if there is a file with same name but 
-    # 
-    # TODO: don't try to save the recipe all the times.
-    # must use some "create if not exists" for recipes
-    try:
-        file_id = project_db.save_file(recipe)
-    except:
-        file_id = project_db.fetch_file_id(recipe)
-
-
-    try:
-        recipe_id = project_db.save_recipe(run_recipe, file_id)
-    except sqlite3.IntegrityError as e:
-        recipe_id = project_db.fetch_recipe_id(run_recipe)
-        click.secho("Recipe already exists in the database.", err=True, fg="yellow")
-
-
-    # 3. Fetch studies ids
-    studies_ids = project_db.fetch_pending_studies_ids(recipe_id, limit)
-
-    if len(studies_ids) == 0:
-        click.echo("All studies have been screened. No pending studies found.")
-        return
-
-    if len(studies_ids) < limit:
-        click.echo(f"Note: Only {len(studies_ids)} studies pending (requested {limit})")
-
-    # 4. Analyze each study
+    studies_ids = _fetch_pending_studies(project_db, recipe_id, limit)
     for study_id in studies_ids:
-        study = project_db.fetch_study(study_id)
-
-        # TODO: Add option to retry a few times or just skip. This can be at this stage or during parsing, which is prone to error
-        try:
-            response = llm.call_llm(run_recipe, study)
-        except Exception as e:
-            click.echo(f"Error calling llm: {e}", err=True)
-            sys.exit(1)
-
-        llm_output = llm.parse_response(response)
-
-        call_id = project_db.save_llm_call(
-                response = response,
-                recipe_id = recipe_id,
-                study_id = study_id
-        )
-        suggestion_id = project_db.save_result(
-                recipe_id = recipe_id,
-                study_id = study_id,
-                call_id = call_id,
-                verdict = llm_output['verdict'],
-                reason = llm_output['reason']
-        )
-        # Commit at this stage. If things worked, start saving results
-        project_db.commit()
-
-        # TODO: mejorar mensajes
-        click.echo(f"Study: {study['title']}\n")
-        click.echo(f"Verdict: {llm_output['verdict']}")
-        click.echo(f"Reason: {llm_output['reason']}\n")
+        _screen_study(project_db, run_recipe, recipe_id, study_id)
 
     # Close before end
     project_db.close()

@@ -54,9 +54,28 @@ class Database():
 
         query = "SELECT file_id FROM files WHERE content = ? "
         cur = self.con.cursor()
-        file_id = cur.execute(query, (f.read_bytes(),)).fetchone()[0]
+        result = cur.execute(query, (f.read_bytes(),)).fetchone()
+
+        if result:
+            return result[0]
+        else:    
+            return None
+
     
-        return file_id
+    def is_filename_used(self, input_file: str) -> bool:
+        """Check if a file exists using based on its content"""
+        f = Path(input_file)
+
+        query = """
+        SELECT file_id FROM files WHERE name = (?)
+        """
+        cur = self.con.cursor()
+        result = cur.execute(query, (f.name,)).fetchone()
+
+        if result:
+            return True
+        else:
+            return False
 
        
     def save_studies(self, file_id, studies_list):
@@ -99,11 +118,14 @@ class Database():
     def fetch_recipe_id(self, recipe) -> int:
         query = "SELECT recipe_id FROM recipes WHERE content = ?"
         cur = self.con.cursor()
-        recipe_id = cur.execute(query, (recipe.model_dump_json(),)).fetchone()[0]
+        result = cur.execute(query, (recipe.model_dump_json(),)).fetchone()
 
-        return recipe_id
-
+        if result:
+            return result[0]
+        else:
+            return None
    
+
     def save_llm_call(self, study_id, recipe_id, response):
         model = response['model']
         input_tokens = response['usage']['prompt_tokens']
